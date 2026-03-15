@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\InputSystem">
+      <UniqueIdentifier>{c1ca5886-793e-4e68-875d-a77ab6d93050}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\FileSystem">
+      <UniqueIdentifier>{2c72047e-b569-46b6-a265-5c41071630b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\SoundSystem">
+      <UniqueIdentifier>{e3009ea3-74e8-4dad-b90f-b0056e0a0b17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\CUDA_SpeedUp">
+      <UniqueIdentifier>{b27f519d-e734-425b-ba29-a185cf193d66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\BlueprintSystem">
+      <UniqueIdentifier>{4aae8606-b9d8-4612-a18a-ac9e0e3b2840}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\WindowsSystem">
+      <UniqueIdentifier>{e13a22b3-affb-4978-9974-1601895e5767}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderingSystem">
+      <UniqueIdentifier>{0a540401-1442-4ce2-ae84-97a9f8f60424}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GameVM">
+      <UniqueIdentifier>{e922ece1-5a78-46b2-b9eb-9cc0ad719a37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InputSystem">
+      <UniqueIdentifier>{16d1cfe8-cb1c-4574-b07a-e5a40613ab6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FileSystem">
+      <UniqueIdentifier>{e839bfa1-258e-4f36-b302-534d5c506e78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CUDA_SpeedUp">
+      <UniqueIdentifier>{1852a41f-be4d-42b4-85c6-fbc5e990add2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\BlueprintSystem">
+      <UniqueIdentifier>{e30783d3-1b75-4265-9bfe-a2b02dd46c51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameVM">
+      <UniqueIdentifier>{0722b6ad-ea34-4ab6-9d74-3f63f9fb138f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderingSystem">
+      <UniqueIdentifier>{9024cda0-826f-4d31-8538-56e8d5835c86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\WindowsSystem">
+      <UniqueIdentifier>{f68cafa6-8699-4516-bb57-dc8c4c9ab2f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SoundSystem">
+      <UniqueIdentifier>{8c787dd6-f713-4dc7-9ada-478a4e88a547}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BMP_Reader.cpp">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="cmdDrawer.cpp">
+      <Filter>Source Files\RenderingSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="_EventBus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BMP_Reader.h">
+      <Filter>Header Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="cmdDrawer.h">
+      <Filter>Header Files\RenderingSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="_EventBus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="莉可丽丝1.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic2Pix.cuh">
+      <Filter>Header Files\CUDA_SpeedUp</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Pic2Pix.cu">
+      <Filter>Source Files\CUDA_SpeedUp</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>
