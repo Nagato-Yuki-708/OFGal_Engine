@@ -11,3 +11,10 @@ struct ProjectStructure
 	int sizeofLine;
 	std::vector<std::string> lines;
 };
+
+ProjectStructure GetProjectStructure(const char* path)
+{
+	ProjectStructure projectStructure;
+	
+	return projectStructure;
+}
