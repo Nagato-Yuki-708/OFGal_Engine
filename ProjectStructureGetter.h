@@ -10,7 +10,7 @@
 
 struct FolderStructure {
 	std::vector<std::string> Files;
-	std::map<std::string, std::unique_ptr<FolderStructure>> Folders;
+	std::map<std::string, std::unique_ptr<FolderStructure>> SubFolders;
 };
 
 struct ProjectStructure { 
