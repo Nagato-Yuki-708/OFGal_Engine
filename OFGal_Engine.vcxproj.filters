@@ -75,6 +75,15 @@
     <ClCompile Include="_EventBus.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FileSystem.cpp">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="ProjectStructureGetter.cpp">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderingSystem.cpp">
+      <Filter>Source Files\RenderingSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -85,6 +94,15 @@
     </ClInclude>
     <ClInclude Include="_EventBus.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectStructureGetter.h">
+      <Filter>Header Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
+      <Filter>Header Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderingSystem.h">
+      <Filter>Header Files\RenderingSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

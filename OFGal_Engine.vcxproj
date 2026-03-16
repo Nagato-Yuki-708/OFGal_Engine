@@ -126,7 +126,10 @@
   <ItemGroup>
     <ClCompile Include="BMP_Reader.cpp" />
     <ClCompile Include="cmdDrawer.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProjectStructureGetter.cpp" />
+    <ClCompile Include="RenderingSystem.cpp" />
     <ClCompile Include="_EventBus.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +141,9 @@
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="ProjectStructureGetter.h" />
+    <ClInclude Include="RenderingSystem.h" />
     <ClInclude Include="_EventBus.h" />
   </ItemGroup>
   <ItemGroup>
