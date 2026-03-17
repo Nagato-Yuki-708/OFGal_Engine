@@ -164,7 +164,7 @@ bool WriteLevelData(const std::string& filepath, const LevelData& data) {
 		json j = data;  // 自动调用 to_json
 		std::ofstream file(filepath, std::ios::binary);
 		if (!file.is_open()) return false;
-		file << j.dump(4);  // 美观输出，可调为紧凑格式以提升性能
+		file << j.dump(4);  // 美观输出，可调为紧凑格式(-1)以提升性能
 		return true;
 	}
 	catch (...) {
