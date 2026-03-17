@@ -7,5 +7,5 @@ public:
 	void pushEvent(const InputEvent& event);   //添加输入事件
 	const std::vector<InputEvent>& getEvents() const;  //获取输入事件
 private:
-	vector<InputEvent>events;  //输入事件队列
+	std::vector<InputEvent>events;  //输入事件队列
 };

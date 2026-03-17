@@ -126,6 +126,7 @@
   <ItemGroup>
     <ClCompile Include="BMP_Reader.cpp" />
     <ClCompile Include="cmdDrawer.cpp" />
+    <ClCompile Include="InputCollector.cpp" />
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="_EventBus.cpp" />
@@ -139,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
+    <ClInclude Include="InputCollector.h" />
     <ClInclude Include="InputEvent.h" />
     <ClInclude Include="InputSystem.h" />
     <ClInclude Include="KeyCode.h" />

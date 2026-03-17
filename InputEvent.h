@@ -10,6 +10,6 @@ enum class InputType {
 struct InputEvent {
 	InputType type;
 	KeyCode key;  //键盘
-	int mouseX;     //鼠标位置
-	int mouseY;
+	int mouseX=0;     //鼠标位置
+	int mouseY=0;
 };

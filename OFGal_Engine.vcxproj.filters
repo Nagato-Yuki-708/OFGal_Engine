@@ -78,6 +78,9 @@
     <ClCompile Include="InputSystem.cpp">
       <Filter>Source Files\InputSystem</Filter>
     </ClCompile>
+    <ClCompile Include="InputCollector.cpp">
+      <Filter>Source Files\InputSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -96,6 +99,9 @@
       <Filter>Header Files\InputSystem</Filter>
     </ClInclude>
     <ClInclude Include="KeyCode.h">
+      <Filter>Header Files\InputSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="InputCollector.h">
       <Filter>Header Files\InputSystem</Filter>
     </ClInclude>
   </ItemGroup>
