@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <functional>
 #include <vector>
+#include "SharedTypes.h"		//结构体统一定义头文件，其中包含了所有需要用于系统间通信的结构体
 
 
 class _EventBus {
@@ -13,21 +14,67 @@ public:
 		static _EventBus instance;
 		return instance;
 	}
+	/*
+	==========================================
+	音频系统事件
+	==========================================
+	*/
+	using SoundPlay_Handler = std::function < bool(const char*) >;
+	/*
+	==========================================
+	文件系统事件
+	==========================================
+	*/
+	using ReadLevelData_Handler = std::function < LevelData(const std::string&) >;
+    using WriteLevelData_Handler = std::function < bool(const std::string&, const LevelData&) >;
+    using GetProjectStructure_Handler = std::function < ProjectStructure(const char*) >;
+    using GetFolderStructure_Handler = std::function < FolderStructure(const char*) >;
+    using ReadBMP_Handler = std::function < BMP_Data(const char*) >;
 
-	using SoundPlay_Handler = std::function < bool(const char*) >;		//bool表示是否成功，char*则指向音频文件路径，视实际情况更改
-	//其它事件类型，请自行添加
 
-	// 订阅播放音频事件
+
+
+	/*
+	==========================================
+	音频系统事件订阅与发布
+	==========================================
+	*/
 	void subscribe_SoundPlay(SoundPlay_Handler handler);
-	// 发布播放音频事件（通知所有订阅者）
 	void publish_SoundPlay(const char* sound_path);
-
-	// 其它事件订阅和发布函数，请像上面两个函数一样自行添加
+	/*
+	==========================================
+	文件系统事件订阅与发布
+	==========================================
+	*/
+	void subscribe_ReadLevelData(ReadLevelData_Handler handler);
+    void subscribe_WriteLevelData(WriteLevelData_Handler handler);
+    void subscribe_GetProjectStructure(GetProjectStructure_Handler handler);
+    void subscribe_GetFolderStructure(GetFolderStructure_Handler handler);
+    void subscribe_ReadBMP(ReadBMP_Handler handler);
+    void publish_ReadBMP(const char* filepath);
+    void publish_WriteLevelData(const std::string& filepath, const LevelData& data);
+    void publish_ReadLevelData(const std::string& filepath);
+    void publish_GetProjectStructure(const char* RootDirectory);
+    void publish_GetFolderStructure(const char* Directory);
 
 private:
 	_EventBus() = default;
 	~_EventBus() = default;
 
+	/*
+	==========================================
+	音频系统事件订阅者
+	==========================================
+	*/
 	std::vector<SoundPlay_Handler> handlers_SoundPlay;  // 所有播放音频事件订阅者，按理来说只有 音频系统 会订阅
-	// 其它订阅者类型，请像上面一样自行添加
+	/*
+	==========================================
+	文件系统事件订阅者
+	==========================================
+	*/
+	std::vector<ReadLevelData_Handler> handlers_ReadLevelData;
+    std::vector<WriteLevelData_Handler> handlers_WriteLevelData;
+    std::vector<GetProjectStructure_Handler> handlers_GetProjectStructure;
+    std::vector<GetFolderStructure_Handler> handlers_GetFolderStructure;
+    std::vector<ReadBMP_Handler> handlers_ReadBMP;
 };

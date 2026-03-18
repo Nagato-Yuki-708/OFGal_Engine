@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include "FileSystem.h"
 
 
 BMP_Data Read_A_BMP(const char* filepath) {
@@ -60,4 +61,8 @@ BMP_Data Read_A_BMP(const char* filepath) {
 		topDown, result.pixels.data());
 
 	return result;
+}
+
+BMP_Data FileSystem::Read_A_BMP(const char* filepath) {
+    return ::Read_A_BMP(filepath);
 }

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <stdexcept>
+#include "FileSystem.h"
 
 namespace fs = std::filesystem;
 
@@ -171,6 +172,9 @@ bool WriteLevelData(const std::string& filepath, const LevelData& data) {
 		return false;
 	}
 }
+bool FileSystem::WriteLevelData(const std::string& filepath, const LevelData& data) {
+    return ::WriteLevelData(filepath, data);
+}
 
 LevelData ReadLevelData(const std::string& filepath) {
 	if (!fs::exists(filepath)) {
@@ -183,4 +187,7 @@ LevelData ReadLevelData(const std::string& filepath) {
 	json j;
 	file >> j;
 	return j.get<LevelData>();  // 自动调用 from_json
+}
+LevelData FileSystem::ReadLevelData(const std::string& filepath) {
+    return ::ReadLevelData(filepath);
 }

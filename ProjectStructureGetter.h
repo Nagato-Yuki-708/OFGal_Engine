@@ -7,17 +7,7 @@
 #include <map>
 #include <filesystem>
 #include <memory>
-
-struct FolderStructure {
-    std::string SelfName;
-	std::vector<std::string> Files;
-	std::map<std::string, std::unique_ptr<FolderStructure>> SubFolders;
-};
-
-struct ProjectStructure { 
-	std::string RootDirectory;
-	FolderStructure Self;
-};
+#include "SharedTypes.h"
 
 ProjectStructure GetProjectStructure(const char* RootDirectory);
 FolderStructure GetFolderStructure(const char* Directory);

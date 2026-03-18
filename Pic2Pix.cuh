@@ -1,8 +1,7 @@
 ﻿// Copyright 2026 MrSeagull. All Rights Reserved.
 #pragma once
 #include <windows.h>  // for RGBQUAD
-
-struct BMP_Pixel; // 前向声明
+#include "SharedTypes.h"
 
 #ifdef __cplusplus
 extern "C" {

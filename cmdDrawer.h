@@ -1,9 +1,9 @@
-// Copyright 2026 MrSeagull. All Rights Reserved.
+﻿// Copyright 2026 MrSeagull. All Rights Reserved.
 #pragma once
 // 禁止 Windows.h 定义 min/max 宏，避免与 std::min 冲突
 #define NOMINMAX
 #include <windows.h>
-#include "BMP_Reader.h"  // 用于 BMP_Data 类型
+#include "SharedTypes.h"
 
 class CmdDrawer {
 public:

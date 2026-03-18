@@ -2,3 +2,4 @@
 #pragma once
 #include "BMP_Reader.h"
 #include "cmdDrawer.h"
+#include "SharedTypes.h"

@@ -3,6 +3,7 @@
 #include "ProjectStructureGetter.h"
 #include <filesystem>
 #include <system_error>   // for error_code
+#include "FileSystem.h"
 
 namespace fs = std::filesystem;
 
@@ -52,6 +53,9 @@ FolderStructure GetFolderStructure(const char* Directory) {
 
 	return result;
 }
+FolderStructure FileSystem::GetFolderStructure(const char* Directory) {
+    return ::GetFolderStructure(Directory);
+}
 
 // 获取项目结构（根目录下的所有直接子目录）
 ProjectStructure GetProjectStructure(const char* RootDirectory) {
@@ -60,4 +64,7 @@ ProjectStructure GetProjectStructure(const char* RootDirectory) {
 	result.RootDirectory = rootPath.string();
 	result.Self = GetFolderStructure(RootDirectory);  // 获取根目录的完整结构
 	return result;
+}
+ProjectStructure FileSystem::GetProjectStructure(const char* RootDirectory) {
+    return ::GetProjectStructure(RootDirectory);
 }

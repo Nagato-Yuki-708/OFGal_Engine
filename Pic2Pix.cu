@@ -1,6 +1,5 @@
 ﻿// Copyright 2026 MrSeagull. All Rights Reserved.
 #include "Pic2Pix.cuh"
-#include "BMP_Reader.h"
 #include <cuda_runtime.h>
 
 __global__ void convertBMPKernel(const uint8_t* rawData, int width, int height, int bitCount,
