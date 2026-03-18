@@ -103,6 +103,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,9 +125,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AudioClip.cpp" />
     <ClCompile Include="BMP_Reader.cpp" />
     <ClCompile Include="cmdDrawer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="_EventBus.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -136,8 +139,11 @@
     <None Include="Pic2Pix.cuh" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AudioClip.h" />
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
+    <ClInclude Include="SoundEvents.h" />
+    <ClInclude Include="SoundSystem.h" />
     <ClInclude Include="_EventBus.h" />
   </ItemGroup>
   <ItemGroup>
