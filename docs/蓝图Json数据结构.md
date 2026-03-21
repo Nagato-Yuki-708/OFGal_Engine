@@ -18,7 +18,7 @@ C[节点Node3]-->D[节点Node......]
 ```json
 "Nodes" : [
 {
-	"id" : 00000003,				//使用8位整数来表示id，是该蓝图内节点的唯一id
+	"id" : 3,				//使用整数来表示id，是该蓝图内节点的唯一id
 	"type" : "IntAddInt",	//整数加整数的加法函数
 	"pins" : [		//具体引脚根据 节点类型 而定，下面的只是举例
 	{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -37,9 +37,9 @@ C[节点Node3]-->D[节点Node......]
 ```json
 "Links" : [
 {
-	"SourceNode" : 00000003,
+	"SourceNode" : 3,
 	"SourcePin" : "result",
-	"TargetNode" : 00000004,
+	"TargetNode" : 4,
 	"TargetPin" : "num1"
 },
 //......
@@ -48,7 +48,7 @@ C[节点Node3]-->D[节点Node......]
 ### 变量Variables
 一个变量应该包含：变量名、变量类型、值
 
-我们的引擎的变量类型只支持基本数据类型 (int,float,string,char,bool)
+我们的引擎的变量类型只支持基本数据类型 (int,float,string,bool)
 ```json
 "Variables" : [
 {
@@ -100,24 +100,24 @@ C[节点Node3]-->D[节点Node......]
 ```
 ### 事件入口Event
 事件入口是一个特殊的节点，它的数据结构与普通节点相比只是少了个入口引脚，由游戏虚拟机启动，需要加入特殊前缀到类型中以便识别
-## 写出一个蓝图
+## 手写出一个蓝图
 我们来写三个版本的蓝图来进行示例：在开始运行时打印4+5的和
 ### 方式1
 创建2个变量，设置其初始值，并用加法函数计算两者的和，最后用打印函数输出其值
 ```json
 {
 	"Name" : "my_bp",
-	"id" : 00000001,	//蓝图在整个项目中的唯一id，00000000被场景蓝图占据
+	"id" : 1,	//蓝图在整个项目中的唯一id，0被场景蓝图占据
 	"Nodes" : [
 	{
-		"id" : 00000000,
+		"id" : 0,
 		"type" : "EVENT_BeginPlay"
 		"pins" : [
 		{"name" : "OEXEC","I/O" : "O","type" : "exec"}
 		]
 	},
 	{
-		"id" : 00000001,
+		"id" : 1,
 		"type" : "Add"	//无特殊前缀则被解释为普通函数
 		"pins" : [
 		{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -129,7 +129,7 @@ C[节点Node3]-->D[节点Node......]
 		"properties" : {}
 	},
 	{
-		"id" : 00000002,
+		"id" : 2,
 		"type" : "Print"	//无特殊前缀则被解释为普通函数
 		"pins" : [
 		{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -139,7 +139,7 @@ C[节点Node3]-->D[节点Node......]
 		"properties" : {}
 	},
 	{
-		"id" : 00000003,
+		"id" : 3,
 		"type" : "SET_VAR"	//表示 变量设置节点
 		"pins" : [
 		{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -148,11 +148,11 @@ C[节点Node3]-->D[节点Node......]
 		{"name" : "OEXEC","I/O" : "O","type" : "exec"},
 		],
 		"properties" : {
-			"variable" : "a"	//必须设置，否则转译将报错，设置后type将更新
+			"variable" : "a"	//必须设置，否则转译将报错；表示要设置的变量，设置后type将更新
 		}
 	},
 	{
-		"id" : 00000004,
+		"id" : 4,
 		"type" : "SET_VAR"	//表示 变量设置节点
 		"pins" : [
 		{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -161,27 +161,27 @@ C[节点Node3]-->D[节点Node......]
 		{"name" : "OEXEC","I/O" : "O","type" : "exec"},
 		],
 		"properties" : {
-			"variable" : "b"	//必须设置，否则转译将报错，设置后type将更新
+			"variable" : "b"	//必须设置，否则转译将报错；表示要设置的变量，设置后type将更新
 		}
 	},
 	{
-		"id" : 00000005,
+		"id" : 5,
 		"type" : "GET_VAR"	//表示 变量引用获取节点
 		"pins" : [
 		{"name" : "output","I/O" : "O","type" : "int"}
 		],
 		"properties" : {
-			"variable" : "a"	//必须设置，否则转译将报错，设置后type将更新
+			"variable" : "a"	//必须设置，否则转译将报错；表示要获取的变量，设置后type将更新
 		}
 	},
 	{
-		"id" : 00000006,
+		"id" : 6,
 		"type" : "GET_VAR"	//表示 变量引用获取节点
 		"pins" : [
 		{"name" : "output","I/O" : "O","type" : "int"}
 		],
 		"properties" : {
-			"variable" : "b"	//必须设置，否则转译将报错，设置后type将更新
+			"variable" : "b"	//必须设置，否则转译将报错；表示要获取的变量，设置后type将更新
 		}
 	}
 	],
@@ -203,44 +203,45 @@ C[节点Node3]-->D[节点Node......]
 	"OutParameters" : [
 	{}
 	],
-	"Events" : {
-        "BeginPlay" : 00000000		//对应节点id
-    }
+	"Events" : [{
+        "Event_Name" : "BeginPlay",
+        "id" : 0	//对应节点id
+    }]
 	"Links" : [
 	{	//beginplay --> set a
-		"SourceNode" : 00000000,
+		"SourceNode" : 0,
 		"SourcePin" : "OEXEC",
-		"TargetNode" : 00000003,
+		"TargetNode" : 3,
 		"TargetPin" : "IEXEC"
 	},
 	{	//set a --> set b
-		"SourceNode" : 00000003,
+		"SourceNode" : 3,
 		"SourcePin" : "OEXEC",
-		"TargetNode" : 00000004,
+		"TargetNode" : 4,
 		"TargetPin" : "IEXEC"
 	},
     {	//set b --> add
-		"SourceNode" : 00000004,
+		"SourceNode" : 4,
 		"SourcePin" : "OEXEC",
-		"TargetNode" : 00000001,
+		"TargetNode" : 1,
 		"TargetPin" : "IEXEC"
 	},
 	{	//get a --> add
-		"SourceNode" : 00000005,
+		"SourceNode" : 5,
 		"SourcePin" : "output",
-		"TargetNode" : 00000001,
+		"TargetNode" : 1,
 		"TargetPin" : "value1"
 	},
 	{	//get b --> add
-		"SourceNode" : 00000006,
+		"SourceNode" : 6,
 		"SourcePin" : "output",
-		"TargetNode" : 00000001,
+		"TargetNode" : 1,
 		"TargetPin" : "value2"
 	},
 	{	//add --> print
-		"SourceNode" : 00000001,
+		"SourceNode" : 1,
 		"SourcePin" : "result",
-		"TargetNode" : 00000002,
+		"TargetNode" : 2,
 		"TargetPin" : "content"
 	},
 	]
@@ -253,17 +254,17 @@ C[节点Node3]-->D[节点Node......]
 ```json
 {
 	"Name" : "my_bp",
-	"id" : 00000001,	//蓝图在整个项目中的唯一id，00000000被场景蓝图占据
+	"id" : 1,	//蓝图在整个项目中的唯一id，0被场景蓝图占据
 	"Nodes" : [
 	{
-		"id" : 00000000,
+		"id" : 0,
 		"type" : "EVENT_BeginPlay"
 		"pins" : [
 		{"name" : "OEXEC","I/O" : "O","type" : "exec"}
 		]
 	},
 	{
-		"id" : 00000001,
+		"id" : 1,
 		"type" : "Add"	//无特殊前缀则被解释为普通函数
 		"pins" : [
 		{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -275,7 +276,7 @@ C[节点Node3]-->D[节点Node......]
 		"properties" : {}
 	},
 	{
-		"id" : 00000002,
+		"id" : 2,
 		"type" : "Print"	//无特殊前缀则被解释为普通函数
 		"pins" : [
 		{"name" : "IEXEC","I/O" : "I","type" : "exec"},
@@ -285,23 +286,23 @@ C[节点Node3]-->D[节点Node......]
 		"properties" : {}
 	},
 	{
-		"id" : 00000003,
+		"id" : 3,
 		"type" : "GET_VAR"	//表示 变量引用获取节点
 		"pins" : [
 		{"name" : "output","I/O" : "O","type" : "int"}
 		],
 		"properties" : {
-			"variable" : "a"	//必须设置，否则转译将报错，设置后type将更新
+			"variable" : "a"
 		}
 	},
 	{
-		"id" : 00000004,
+		"id" : 4,
 		"type" : "GET_VAR"	//表示 变量引用获取节点
 		"pins" : [
 		{"name" : "output","I/O" : "O","type" : "int"}
 		],
 		"properties" : {
-			"variable" : "b"	//必须设置，否则转译将报错，设置后type将更新
+			"variable" : "b"
 		}
 	}
 	],
@@ -323,32 +324,33 @@ C[节点Node3]-->D[节点Node......]
 	"OutParameters" : [
 	{}
 	],
-	"Events" : {
-        "BeginPlay" : 00000000		//对应节点id
-    }
+	"Events" : [{
+        "Event_Name" : "BeginPlay",
+        "id" : 0	//对应节点id
+    }]
 	"Links" : [
 	{	//beginplay --> add
-		"SourceNode" : 00000000,
+		"SourceNode" : 0,
 		"SourcePin" : "OEXEC",
-		"TargetNode" : 00000001,
+		"TargetNode" : 1,
 		"TargetPin" : "IEXEC"
 	},
 	{	//get a --> add
-		"SourceNode" : 00000003,
+		"SourceNode" : 3,
 		"SourcePin" : "output",
-		"TargetNode" : 00000001,
+		"TargetNode" : 1,
 		"TargetPin" : "value1"
 	},
 	{	//get b --> add
-		"SourceNode" : 00000004,
+		"SourceNode" : 4,
 		"SourcePin" : "output",
-		"TargetNode" : 00000001,
+		"TargetNode" : 1,
 		"TargetPin" : "value2"
 	},
 	{	//add --> print
-		"SourceNode" : 00000001,
+		"SourceNode" : 1,
 		"SourcePin" : "result",
-		"TargetNode" : 00000002,
+		"TargetNode" : 2,
 		"TargetPin" : "content"
 	},
 	]

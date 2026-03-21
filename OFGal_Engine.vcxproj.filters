@@ -87,6 +87,9 @@
     <ClCompile Include="Json_LevelData_ReadWrite.cpp">
       <Filter>Source Files\FileSystem</Filter>
     </ClCompile>
+    <ClCompile Include="Json_BPData_ReadWrite.cpp">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -112,6 +115,9 @@
     </ClInclude>
     <ClInclude Include="SharedTypes.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Json_BPData_ReadWrite.h">
+      <Filter>Header Files\FileSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

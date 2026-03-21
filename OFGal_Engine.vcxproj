@@ -132,6 +132,7 @@
     <ClCompile Include="BMP_Reader.cpp" />
     <ClCompile Include="cmdDrawer.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="Json_BPData_ReadWrite.cpp" />
     <ClCompile Include="Json_LevelData_ReadWrite.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProjectStructureGetter.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="Json_BPData_ReadWrite.h" />
     <ClInclude Include="Json_LevelData_ReadWrite.h" />
     <ClInclude Include="ProjectStructureGetter.h" />
     <ClInclude Include="RenderingSystem.h" />

@@ -30,6 +30,8 @@ public:
     using GetProjectStructure_Handler = std::function < ProjectStructure(const char*) >;
     using GetFolderStructure_Handler = std::function < FolderStructure(const char*) >;
     using ReadBMP_Handler = std::function < BMP_Data(const char*) >;
+    using WriteBPData_Handler = std::function < bool(const std::string&, const BlueprintData&) >;
+    using ReadBPData_Handler = std::function < BlueprintData(const std::string&) >;
 
 
 
@@ -51,11 +53,15 @@ public:
     void subscribe_GetProjectStructure(GetProjectStructure_Handler handler);
     void subscribe_GetFolderStructure(GetFolderStructure_Handler handler);
     void subscribe_ReadBMP(ReadBMP_Handler handler);
+    void subscribe_ReadBPData(ReadBPData_Handler handler);
+    void subscribe_WriteBPData(WriteBPData_Handler handler);
     void publish_ReadBMP(const char* filepath);
     void publish_WriteLevelData(const std::string& filepath, const LevelData& data);
     void publish_ReadLevelData(const std::string& filepath);
     void publish_GetProjectStructure(const char* RootDirectory);
     void publish_GetFolderStructure(const char* Directory);
+    void publish_ReadBPData(const std::string& filepath);
+    void publish_WriteBPData(const std::string& filepath, const BlueprintData& data);
 
 private:
     _EventBus() = default;
@@ -77,4 +83,6 @@ private:
     std::vector<GetProjectStructure_Handler> handlers_GetProjectStructure;
     std::vector<GetFolderStructure_Handler> handlers_GetFolderStructure;
     std::vector<ReadBMP_Handler> handlers_ReadBMP;
+    std::vector<WriteBPData_Handler> handlers_WriteBPData;
+    std::vector<ReadBPData_Handler> handlers_ReadBPData;
 };

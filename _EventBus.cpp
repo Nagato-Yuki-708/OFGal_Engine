@@ -77,3 +77,25 @@ void _EventBus::subscribe_WriteLevelData(WriteLevelData_Handler handler)
 {
     handlers_WriteLevelData.push_back(handler);
 }
+void _EventBus::publish_WriteBPData(const std::string& filepath, const BlueprintData& data)
+{
+    for (auto& handler : handlers_WriteBPData)
+    {
+        handler(filepath, data);
+    }
+}
+void _EventBus::subscribe_WriteBPData(WriteBPData_Handler handler)
+{
+    handlers_WriteBPData.push_back(handler);
+}
+void _EventBus::publish_ReadBPData(const std::string& filepath)
+{
+    for (auto& handler : handlers_ReadBPData)
+    {
+        handler(filepath);
+    }
+}
+void _EventBus::subscribe_ReadBPData(ReadBPData_Handler handler)
+{
+    handlers_ReadBPData.push_back(handler);
+}

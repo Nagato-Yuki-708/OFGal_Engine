@@ -127,3 +127,66 @@ struct LevelData {
 	std::unordered_map<std::string, ObjectData> objects; // 对象名 -> 对象数据
 };
 #endif
+
+/*
+=================================================
+蓝图系统结构体定义
+=================================================
+*/
+#ifndef __CUDACC__  // 以下内容仅在主机编译时可见
+// 引脚定义
+struct Pin {
+	std::string name;
+	std::string io;          // "I" 或 "O"
+	std::string type;
+	std::optional<std::string> literal;   // 字面值，可能不存在
+};
+
+// 节点定义
+struct Node {
+	int id;
+	std::string type;
+	std::vector<Pin> pins;
+	std::map<std::string, std::string> properties;   // 键值对属性
+};
+
+// 变量定义
+struct Variable {
+	std::string name;
+	std::string type;
+	std::string value;       // 存储字面值（字符串形式）
+};
+
+// 参数定义（输入/输出参数）
+struct Parameter {
+	std::string name;
+	std::string type;
+	std::string defaultValue;
+};
+
+// 事件定义
+struct Event {
+	std::string event_name;   // 对应 JSON 中的 "Event_Name"
+	int id;
+};
+
+// 连接定义
+struct Link {
+	int sourceNode;
+	std::string sourcePin;
+	int targetNode;
+	std::string targetPin;
+};
+
+// 蓝图顶层结构
+struct BlueprintData {
+	std::string name;
+	int id;
+	std::vector<Node> nodes;
+	std::vector<Variable> variables;
+	std::vector<Parameter> inParameters;
+	std::vector<Parameter> outParameters;
+	std::vector<Event> events;
+	std::vector<Link> links;
+};
+#endif
