@@ -59,21 +59,21 @@ bool CmdDrawer::initialize() {
 
 	// 检查句柄有效性
 	if (hConsole == INVALID_HANDLE_VALUE || hStdin == INVALID_HANDLE_VALUE) {
-		std::cerr << "获取控制台句柄失败。错误码：" << GetLastError() << std::endl;
+		OutputDebugStringA("获取控制台句柄失败。错误码：" + GetLastError());
 		return false;
 	}
 
 	// 保存原始控制台属性
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) {
-		std::cerr << "获取控制台信息失败" << std::endl;
+		OutputDebugStringA("获取控制台信息失败");
 		return false;
 	}
 	originalAttributes = csbi.wAttributes;
 
 	// 保存原始输入模式（用于恢复快速编辑模式）
 	if (!GetConsoleMode(hStdin, &originalInputMode)) {
-		std::cerr << "获取输入模式失败" << std::endl;
+		OutputDebugStringA("获取输入模式失败");
 		return false;
 	}
 
@@ -103,7 +103,7 @@ bool CmdDrawer::initialize() {
 
 	// 启用 VT 模式
 	if (!enableVTMode()) {
-		std::cerr << "启用 VT 模式失败" << std::endl;
+		OutputDebugStringA("启用 VT 模式失败");
 		return false;
 	}
 
@@ -119,7 +119,7 @@ bool CmdDrawer::initialize() {
 
 void CmdDrawer::draw(const BMP_Data& bmp) {
 	if (!initialized) {
-		std::cerr << "绘图器未初始化，请先调用 initialize()" << std::endl;
+		OutputDebugStringA("绘图器未初始化，请先调用 initialize()");
 		return;
 	}
 

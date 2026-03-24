@@ -1,33 +1,64 @@
 ﻿{
-	"TestLevel1":{
-		"background":{
-			"Transform":{
-				"Location":{
-					"x":0.0,
-                    "y":0.0,
-                    "z":0
+	"TestLevel1": {
+		"background": {
+			"Transform": {
+				"Location": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0
 				},
-				"Rotation":{
-					"r":0.0
+				"Rotation": {
+					"r": 0.0
 				},
-				"Scale":{
-					"x":1.0,
-					"y":1.0
+				"Scale": {
+					"x": 1.0,
+					"y": 1.0
 				}
 			},
-			"Picture":{
-				"Path":"E:\\Projects\\C++Projects\\OFGal_Engine\\1218817058308192.bmp"
-				"Location":{
-					"x":0.0,
-                    "y":0.0,
-                    "z":0
+			"Picture": {
+				"Path": "E:\\Projects\\C++Projects\\OFGal_Engine\\1218817058308192.bmp",
+				"Location": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0
 				},
-                "Rotation":{
-					"r":0.0
+				"Rotation": {
+					"r": 0.0
 				},
-                "Size":{
-					"x":0.0,
-					"y":0.0
+				"Size": {
+					"x": 0.0,
+					"y": 0.0
+				}
+			}
+		},
+		"AjitaniHifumi": {
+			"Transform": {
+				"Location": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0
+				},
+				"Rotation": {
+					"r": 0.0
+				},
+				"Scale": {
+					"x": 1.0,
+					"y": 1.0
+				}
+			},
+			"Picture": {
+				"Path": "E:\\Projects\\C++Projects\\OFGal_Engine\\日富美.bmp",
+				"Location": {
+					"x": 30.0,
+					"y": 30.0,
+					"z": 0
+				},
+				"Rotation": {
+					"r": 0.0
+				},
+				"Size": {
+					"x": 0.0,
+					"y": 0.0
 				}
 			}
 		}
