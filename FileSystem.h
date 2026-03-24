@@ -4,18 +4,21 @@
 #include "BMP_Reader.h"
 #include "Json_LevelData_ReadWrite.h"
 #include "ProjectStructureGetter.h"
+#include "Json_BPData_ReadWrite.h"
 #include "SharedTypes.h"
+#include "_EventBus.h"
 
 class FileSystem {
 public:
 
     FileSystem(const FileSystem&) = delete;
     FileSystem& operator=(const FileSystem&) = delete;
-    static FileSystem& getInstance()
-    {
-        static FileSystem instance;
-        return instance;
-    }
+
+	static FileSystem& getInstance()
+	{
+		static FileSystem instance;
+		return instance;
+	}
 
     // 场景文件读写接口(*.level)
     bool WriteLevelData(const std::string& filepath, const LevelData& data);
@@ -33,6 +36,14 @@ private:
     ProjectStructure project_structure;
     std::string project_path;
 
-    FileSystem() = default;
+    FileSystem() {
+		_EventBus::getInstance().subscribe_GetFolderStructure(::GetFolderStructure);
+		_EventBus::getInstance().subscribe_GetProjectStructure(::GetProjectStructure);
+		_EventBus::getInstance().subscribe_ReadBMP(::Read_A_BMP);
+		_EventBus::getInstance().subscribe_ReadBPData(::ReadBPData);
+		_EventBus::getInstance().subscribe_ReadLevelData(::ReadLevelData);
+		_EventBus::getInstance().subscribe_WriteBPData(::WriteBPData);
+		_EventBus::getInstance().subscribe_WriteLevelData(::WriteLevelData);
+    }
     ~FileSystem() = default;
 };
