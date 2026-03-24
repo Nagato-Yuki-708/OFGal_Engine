@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include <windows.h>  // MCI头文件
+#pragma comment(lib, "winmm.lib")//告知链接器链接winmm.lib库
 
 class AudioClip;
 
