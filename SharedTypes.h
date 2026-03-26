@@ -53,7 +53,7 @@ struct Location2DInt {
 	int y = 0;
 };
 
-struct Rotation {
+struct RotationEuler {
 	float r = 0.0f;
 };
 
@@ -75,14 +75,14 @@ struct Size2DInt {
 // 组件结构
 struct TransformComponent {
 	Location3D Location;
-	Rotation Rotation;
+	RotationEuler Rotation;
 	Scale2D Scale;
 };
 
 struct PictureComponent {
 	std::string Path;
 	Location3D Location;
-	Rotation Rotation;
+	RotationEuler Rotation;
 	Size2D Size;
 };
 
@@ -109,8 +109,9 @@ struct BlueprintComponent {
 
 #ifndef __CUDACC__  // 以下内容仅在主机编译时可见
 struct ObjectData {
-	std::string parent;
-	std::vector<std::string> children;
+	std::string name;
+	ObjectData* parent;		//如果是以场景为父对象，则为 nullptr
+	std::map<std::string, ObjectData*> objects;
 	std::optional<TransformComponent> Transform;
 	std::optional<PictureComponent> Picture;
 	std::optional<TextblockComponent> Textblock;
@@ -121,7 +122,7 @@ struct ObjectData {
 // 场景结构
 struct LevelData {
 	std::string name;                                    // 场景名（JSON顶层键）
-	std::unordered_map<std::string, ObjectData> objects; // 对象名 -> 对象数据
+	std::map<std::string, ObjectData*> objects; // 对象名 -> 对象数据
 };
 #endif
 
