@@ -3,6 +3,9 @@
 #pragma once
 #include "BMP_Reader.h"
 #include "cmdDrawer.h"
+#include "SRP.cuh"
+#include "PPRP.cuh"
+#include "FrameProcessing.cuh"
 #include "SharedTypes.h"
 
 class RenderingSystem {
@@ -16,6 +19,8 @@ public:
         static RenderingSystem instance;
         return instance;
     }
+    Frame Render_A_Frame_SRP(const LevelData& level);
+    bool Print_A_Frame(const Frame& frame);
 private:
     RenderingSystem() {
         CanvasSize = getMaxCanvasSize();

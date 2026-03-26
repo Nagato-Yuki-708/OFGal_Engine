@@ -170,7 +170,7 @@ void drawFrame(const Frame& frame) {
 		for (int x = 0; x < drawWidth; ++x) {
 			const auto& pixel = frame.pixels[y * drawWidth + x];
 
-			if (pixel.Red != lastR || pixel.Green != lastG || pixel.Blue != lastB) {
+			if (pixel.red != lastR || pixel.green != lastG || pixel.blue != lastB) {
 				*p++ = '\x1b';
 				*p++ = '[';
 				*p++ = '4';
@@ -179,22 +179,22 @@ void drawFrame(const Frame& frame) {
 				*p++ = '2';
 				*p++ = ';';
 
-				memcpy(p, g_intTable.str[pixel.Red], g_intTable.len[pixel.Red]);
-				p += g_intTable.len[pixel.Red];
+				memcpy(p, g_intTable.str[pixel.red], g_intTable.len[pixel.red]);
+				p += g_intTable.len[pixel.red];
 				*p++ = ';';
 
-				memcpy(p, g_intTable.str[pixel.Green], g_intTable.len[pixel.Green]);
-				p += g_intTable.len[pixel.Green];
+				memcpy(p, g_intTable.str[pixel.green], g_intTable.len[pixel.green]);
+				p += g_intTable.len[pixel.green];
 				*p++ = ';';
 
-				memcpy(p, g_intTable.str[pixel.Blue], g_intTable.len[pixel.Blue]);
-				p += g_intTable.len[pixel.Blue];
+				memcpy(p, g_intTable.str[pixel.blue], g_intTable.len[pixel.blue]);
+				p += g_intTable.len[pixel.blue];
 
 				*p++ = 'm';
 
-				lastR = pixel.Red;
-				lastG = pixel.Green;
-				lastB = pixel.Blue;
+				lastR = pixel.red;
+				lastG = pixel.green;
+				lastB = pixel.blue;
 			}
 			*p++ = ' ';
 		}

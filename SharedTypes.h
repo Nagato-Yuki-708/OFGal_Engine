@@ -25,10 +25,10 @@ struct ProjectStructure {
 };
 
 struct BMP_Pixel {
-	unsigned char red;
-	unsigned char green;
-	unsigned char blue;
-	unsigned char alpha;
+	unsigned char red = 0;
+	unsigned char green = 0;
+	unsigned char blue = 0;
+	unsigned char alpha = 0;
 };
 
 struct BMP_Data {
@@ -193,9 +193,9 @@ struct BlueprintData {
 =================================================
 */
 struct StdPixel {
-	unsigned char Red;
-	unsigned char Green;
-	unsigned char Blue;
+	unsigned char red = 0;
+	unsigned char green = 0;
+	unsigned char blue = 0;
 };
 struct Frame {
 	int width;
