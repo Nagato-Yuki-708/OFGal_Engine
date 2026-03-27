@@ -203,3 +203,10 @@ struct Frame {
 	int height;
 	std::vector<StdPixel> pixels;
 };
+struct RenderData {
+	float trans[3][3] = { 0 };
+	float inverse_trans[3][3] = { 0 };
+	Location2D points[4];
+	BMP_Data texture;
+	int depth = 0;
+};
