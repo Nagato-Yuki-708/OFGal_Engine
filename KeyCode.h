@@ -5,5 +5,6 @@ enum class KeyCode {
     CtrlS,      // Ctrl + S
     MouseLeft,
     MouseRight,
-    MouseMiddle
+    MouseMiddle,
+    W
 };

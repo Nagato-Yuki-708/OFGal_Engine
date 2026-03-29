@@ -11,5 +11,6 @@ private:
 	bool prevMouseLeft = false;
 	bool prevMouseRight = false;
 	bool prevMouseMiddle = false;
+	bool prevWState = false;
 
 };

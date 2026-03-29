@@ -7,7 +7,15 @@ InputCollector::InputCollector(InputSystem* system) :inputsystem(system) {}    /
 void InputCollector::update() {
 	bool ctrlDown = (GetAsyncKeyState(VK_LCONTROL) & 0x8000) || (GetAsyncKeyState(VK_LCONTROL) & 0x8000);
 	bool sDown = (GetAsyncKeyState('S') & 0x8000) != 0;   //确认s被按下
+	bool wDown = (GetAsyncKeyState('W') & 0x8000) != 0;   //确认w被按下
 	bool sPressed = (sDown && !prevSSatate);     //确认s是刚刚按下
+	if (wDown!= prevWState) {
+		InputEvent event{};
+		event.key = KeyCode::W;
+		event.type = wDown ? InputType::KeyDown : InputType::KeyUp;
+		inputsystem->pushEvent(event);
+	}
+	prevWState = wDown;
 	if (ctrlDown && sPressed) {		//将事件加入事件的集合中
 		InputEvent event{};
 		event.key = KeyCode::CtrlS;
