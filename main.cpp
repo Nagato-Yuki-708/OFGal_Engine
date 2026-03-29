@@ -2,8 +2,25 @@
 #include "_EventBus.h"
 #include "BMP_Reader.h"
 #include "cmdDrawer.h"
+#include "InputSystem.h"
+#include<windows.h>
+#include <atomic>
+#include <thread>
+#include"InputCollector.h"
+
+void InputThread(InputCollector* collector) {
+	std::atomic<bool> running(true);    //创建原子变量，表示程序是否在运行
+	while (running) {
+		collector->update();    //不断的调用采集函数，这就是单开一个线程之后的效果，能够不断的采集输入事件
+	}
+	Sleep(1);
+}
 
 int main() {
+	InputSystem inputSystem;   //创建输入系统实例
+	InputCollector collector(&inputSystem);
+	std::thread inputThread(InputThread, &collector);
+
 	// 1. 加载图片
 	BMP_Data img = Read_A_BMP("E:\\Projects\\C++Projects\\OFGal_Engine\\莉可丽丝1.bmp");
 	if (img.width <= 0 || img.height <= 0) {

@@ -17,6 +17,6 @@ void _EventBus::publish_InputEvent(const InputEvent& event) {
         handler(event);
     }
 }
-void _EvenBus::subscribe_InputEvent(InputEvent_Handler handler) {
+void _EventBus::subscribe_InputEvent(InputEvent_Handler handler) {
     handlers_InputEvent.push_back(handler);
 }

@@ -1,7 +1,15 @@
 #pragma once
 #include "Windows.h"
+#include "InputSystem.h"
 class InputCollector {
 public:
-	static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	//四个参数分别是：窗口句柄、消息类型、消息参数1、消息参数2
+	InputCollector(InputSystem* system);
+	void update();   //核心轮询函数，能够查询当前的输入状态，并将输入事件添加到输入系统中
+private:
+	InputSystem* inputsystem;
+	bool prevSSatate = false;   //四个变量记录按键前一刻的状态
+	bool prevMouseLeft = false;
+	bool prevMouseRight = false;
+	bool prevMouseMiddle = false;
+
 };
