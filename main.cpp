@@ -1,5 +1,3 @@
-﻿//不要在代码中留下cout、cin等控制台输出语句，如要调试，请使用OutputDebugStringA("your message");它会输出到vs调试台中
-
 #include <iostream>
 #include "_EventBus.h"
 #include "BMP_Reader.h"
@@ -12,7 +10,6 @@
 #include "FileSystem.h"
 #include "GameVM.h"
 #include "RenderingSystem.h"
-
 std::atomic<bool> running(true);    //创建原子变量，表示程序是否在运行
 void InputThread(InputCollector* collector) {
 	while (running) {
