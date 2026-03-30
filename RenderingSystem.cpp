@@ -54,6 +54,7 @@ static void TraverseObject(
                 {static_cast<float>(imgWidth - 1), static_cast<float>(imgHeight - 1), 1.0f},
                 {0.0f, static_cast<float>(imgHeight - 1), 1.0f}
             };
+            // 顺序：(0,0) (1,0) (1,1) (0,1)
 
             // 4. 为 Picture 组件构建局部变换矩阵（先缩放/旋转/平移）
             float rad = pic.Rotation.r * pi / 180.0f;
@@ -130,4 +131,27 @@ void RenderingSystem::SortByDepth(std::vector<RenderData>& renderObjects) {
             // 所有公共前缀相等，则较长的数组更深，应排在前面
             return da.size() > db.size();
         });
+}
+
+void RenderingSystem::RefreshDepth(std::vector<RenderData>& renderObjects) {
+    for (int i = renderObjects.size(); i > 0; --i)
+        for (int j = 0; j < 4; ++j)
+            renderObjects[i - 1].points[j].z = i;
+}
+
+Frame RenderingSystem::Rasterize(std::vector<RenderData>& renderObjects, int MSAA_Multiple) {
+    Frame result;
+    result.width = CanvasSize.x;
+    result.height = CanvasSize.y;
+    result.pixels.resize(CanvasSize.x * CanvasSize.y, { 0,0,0 });
+
+    // 验证MSAA有效性
+    if(MSAA_Multiple < 1 || MSAA_Multiple > 4)
+        MSAA_Multiple = 1;
+
+    for (RenderData& renderData : renderObjects) {
+        Rasterize_An_Object(result, renderData, MSAA_Multiple);
+    }
+
+    return result;
 }

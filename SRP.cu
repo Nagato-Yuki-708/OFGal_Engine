@@ -4,6 +4,15 @@
 #include <cmath>
 #include <algorithm>
 
+// 设备端：矩阵乘向量（3x3 * 3x1）
+__device__ Vector3D mulMatrixVector(const Matrix3D& mat, const Vector3D& vec) {
+    Vector3D result;
+    result.x = mat.m[0][0] * vec.x + mat.m[0][1] * vec.y + mat.m[0][2] * vec.z;
+    result.y = mat.m[1][0] * vec.x + mat.m[1][1] * vec.y + mat.m[1][2] * vec.z;
+    result.z = mat.m[2][0] * vec.x + mat.m[2][1] * vec.y + mat.m[2][2] * vec.z;
+    return result;
+}
+
 // 三次卷积核权重计算 (a = -0.5)
 __device__ float cubicWeight(float x) {
     float ax = fabsf(x);
@@ -124,4 +133,161 @@ extern "C" BMP_Data ForceResizeImage_Bicubic(const BMP_Data& src, const Size2DIn
     }
 
     return dst;
+}
+
+__device__ bool isPointInTriangle(float px, float py,
+    float ax, float ay,
+    float bx, float by,
+    float cx, float cy) {
+
+    float abx = bx - ax, aby = by - ay;
+    float apx = px - ax, apy = py - ay;
+    float cross1 = abx * apy - aby * apx;
+
+    float bcx = cx - bx, bcy = cy - by;
+    float bpx = px - bx, bpy = py - by;
+    float cross2 = bcx * bpy - bcy * bpx;
+
+    float cax = ax - cx, cay = ay - cy;
+    float cpx = px - cx, cpy = py - cy;
+    float cross3 = cax * cpy - cay * cpx;
+
+    // 允许边界上的点（包含零）
+    bool hasNeg = (cross1 < 0) || (cross2 < 0) || (cross3 < 0);
+    bool hasPos = (cross1 > 0) || (cross2 > 0) || (cross3 > 0);
+    return !(hasNeg && hasPos);
+}
+
+// 内核函数：并行处理四边形覆盖的像素
+__global__ void RasterizeQuadKernel(
+    unsigned char* framePixels,   // 帧缓冲（RGB，每个像素3字节）
+    int width, int height,
+    Matrix3D inverse_trans,
+    Vector3D points[4],           // 四个屏幕空间顶点（已拷贝到设备）
+    const unsigned char* texPixels, // 纹理像素数据，四通道RGBA
+    int texWidth, int texHeight,
+    int msaaMultiple)             // MSAA倍数
+{
+    // 获取当前线程对应的像素坐标（全局索引）
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    // 边界检查：超出屏幕范围则退出
+    if (x >= width || y >= height) return;
+
+    // 像素中心坐标
+    float px = x + 0.5f;
+    float py = y + 0.5f;
+
+    // 将四边形拆成两个三角形： (0,1,2) 和 (0,2,3)
+    Vector3D tri1[3] = { points[0], points[1], points[2] };
+    Vector3D tri2[3] = { points[0], points[2], points[3] };
+
+    // 判断点是否在任一三角形内
+    bool inside = isPointInTriangle(px, py,
+        tri1[0].x, tri1[0].y,
+        tri1[1].x, tri1[1].y,
+        tri1[2].x, tri1[2].y) ||
+        isPointInTriangle(px, py,
+            tri2[0].x, tri2[0].y,
+            tri2[1].x, tri2[1].y,
+            tri2[2].x, tri2[2].y);
+
+    if (inside) {
+        unsigned char r = 0, g = 0, b = 0;
+
+        Vector3D P = { px, py, 1 };
+        Vector3D TargetPixel = mulMatrixVector(inverse_trans, P);
+
+        int i = TargetPixel.x;
+        int j = TargetPixel.y;
+
+        if (i < 0) i = 0;
+        if (i >= texWidth) i = texWidth - 1;
+        if (j < 0) j = 0;
+        if (j >= texHeight) j = texHeight - 1;
+
+        r = texPixels[(j * texWidth + i) * 4 + 0];
+        g = texPixels[(j * texWidth + i) * 4 + 1];
+        b = texPixels[(j * texWidth + i) * 4 + 2];
+
+        // 写入帧缓冲
+        framePixels[(y * width + x) * 3 + 0];
+        framePixels[(y * width + x) * 3 + 1];
+        framePixels[(y * width + x) * 3 + 2];
+    }
+}
+
+extern "C" void Rasterize_An_Object(Frame& frame, const RenderData& obj, const int& MSAA_Multiple) {
+    const int width = frame.width;
+    const int height = frame.height;
+
+    const Vector3D* p = obj.points;  // 主机端顶点指针
+
+    // 计算 AABB
+    float minX = min(p[0].x, min(p[1].x, min(p[2].x, p[3].x)));
+    float maxX = max(p[0].x, max(p[1].x, max(p[2].x, p[3].x)));
+    float minY = min(p[0].y, min(p[1].y, min(p[2].y, p[3].y)));
+    float maxY = max(p[0].y, max(p[1].y, max(p[2].y, p[3].y)));
+
+    int xStart = max(0, (int)floor(minX));
+    int xEnd = min(width - 1, (int)ceil(maxX));
+    int yStart = max(0, (int)floor(minY));
+    int yEnd = min(height - 1, (int)ceil(maxY));
+    int roiWidth = xEnd - xStart + 1;
+    int roiHeight = yEnd - yStart + 1;
+
+    if (roiWidth <= 0 || roiHeight <= 0) return;  // 无有效像素
+
+    dim3 blockSize(16, 16);
+    dim3 gridSize((roiWidth + blockSize.x - 1) / blockSize.x,
+        (roiHeight + blockSize.y - 1) / blockSize.y);
+
+    // ----- 分配设备内存并拷贝数据 -----
+    // 1. 帧缓冲
+    unsigned char* d_frame = nullptr;
+    size_t frameBytes = frame.pixels.size() * sizeof(StdPixel);
+    cudaMalloc(&d_frame, frameBytes);
+    cudaMemcpy(d_frame, frame.pixels.data(), frameBytes, cudaMemcpyHostToDevice);
+
+    // 2. 纹理数据 (注意 const 处理)
+    const unsigned char* d_tex = nullptr;
+    size_t texBytes = obj.texture.pixels.size() * sizeof(BMP_Pixel);
+    cudaMalloc((void**)&d_tex, texBytes);
+    cudaMemcpy((void*)d_tex, obj.texture.pixels.data(), texBytes, cudaMemcpyHostToDevice);
+
+    // 3. 顶点数组 (4个 Vector3D)
+    Vector3D* d_points = nullptr;
+    size_t pointsBytes = 4 * sizeof(Vector3D);
+    cudaMalloc(&d_points, pointsBytes);
+    cudaMemcpy(d_points, obj.points, pointsBytes, cudaMemcpyHostToDevice);
+
+    // ----- 启动内核 -----
+    RasterizeQuadKernel << <gridSize, blockSize >> > (
+        d_frame, width, height,
+        obj.inverse_trans,          // inverse_trans 已在设备端？如果是主机端，也需要拷贝
+        d_points,
+        d_tex,
+        obj.texture.width, obj.texture.height,
+        MSAA_Multiple
+        );
+
+    // ----- 错误检查 -----
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("Kernel launch error: %s\n", cudaGetErrorString(err));
+    }
+    cudaDeviceSynchronize();
+    err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        printf("Kernel execution error: %s\n", cudaGetErrorString(err));
+    }
+
+    // ----- 拷贝结果回主机 -----
+    cudaMemcpy(frame.pixels.data(), d_frame, frameBytes, cudaMemcpyDeviceToHost);
+
+    // ----- 释放设备内存 -----
+    cudaFree(d_frame);
+    cudaFree((void*)d_tex);
+    cudaFree(d_points);
 }

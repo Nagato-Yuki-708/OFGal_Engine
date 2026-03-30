@@ -25,11 +25,22 @@ public:
     }
 private:
     RenderingSystem() {
+        initializeConsoleDrawer();
         CanvasSize = getMaxCanvasSize();
+
+        RefreshRenderObjects(_EventBus::getInstance().publish_ReadLevelData("E:\\Projects\\C++Projects\\OFGal_Engine\\TestLevel1.level"));
+        AABB_Remove(RenderObjects);
+        SortByDepth(RenderObjects);
+        RefreshDepth(RenderObjects);
+
+        Frame frame = Rasterize(RenderObjects);
+        drawFrame(frame);
     }
     ~RenderingSystem() = default;
 
     void RefreshRenderObjects(const LevelData& currentLevel);
     void AABB_Remove(std::vector<RenderData>& renderObjects);
     void SortByDepth(std::vector<RenderData>& renderObjects);
+    void RefreshDepth(std::vector<RenderData>& renderObjects);
+    Frame Rasterize(std::vector<RenderData>& renderObjects, int MSAA_Multiple = 1);
 };
