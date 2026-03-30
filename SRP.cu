@@ -160,22 +160,19 @@ __device__ bool isPointInTriangle(float px, float py,
 
 // 内核函数：并行处理四边形覆盖的像素
 __global__ void RasterizeQuadKernel(
-    unsigned char* framePixels,   // 帧缓冲（RGB，每个像素3字节）
+    unsigned char* framePixels,
     int width, int height,
+    int offsetX, int offsetY,          // 新增偏移量
     Matrix3D inverse_trans,
-    Vector3D points[4],           // 四个屏幕空间顶点（已拷贝到设备）
-    const unsigned char* texPixels, // 纹理像素数据，四通道RGBA
+    Vector3D points[4],
+    const unsigned char* texPixels,
     int texWidth, int texHeight,
-    int msaaMultiple)             // MSAA倍数
+    int msaaMultiple)
 {
-    // 获取当前线程对应的像素坐标（全局索引）
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    // 边界检查：超出屏幕范围则退出
+    int x = offsetX + blockIdx.x * blockDim.x + threadIdx.x;
+    int y = offsetY + blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height) return;
 
-    // 像素中心坐标
     float px = x + 0.5f;
     float py = y + 0.5f;
 
@@ -194,27 +191,24 @@ __global__ void RasterizeQuadKernel(
             tri2[2].x, tri2[2].y);
 
     if (inside) {
-        unsigned char r = 0, g = 0, b = 0;
-
         Vector3D P = { px, py, 1 };
         Vector3D TargetPixel = mulMatrixVector(inverse_trans, P);
 
-        int i = TargetPixel.x;
-        int j = TargetPixel.y;
+        int i = (int)TargetPixel.x;
+        int j = (int)TargetPixel.y;
 
-        if (i < 0) i = 0;
-        if (i >= texWidth) i = texWidth - 1;
-        if (j < 0) j = 0;
-        if (j >= texHeight) j = texHeight - 1;
+        i = max(0, min(i, texWidth - 1));
+        j = max(0, min(j, texHeight - 1));
 
-        r = texPixels[(j * texWidth + i) * 4 + 0];
-        g = texPixels[(j * texWidth + i) * 4 + 1];
-        b = texPixels[(j * texWidth + i) * 4 + 2];
+        unsigned char r = texPixels[(j * texWidth + i) * 4 + 0];
+        unsigned char g = texPixels[(j * texWidth + i) * 4 + 1];
+        unsigned char b = texPixels[(j * texWidth + i) * 4 + 2];
 
-        // 写入帧缓冲
-        framePixels[(y * width + x) * 3 + 0];
-        framePixels[(y * width + x) * 3 + 1];
-        framePixels[(y * width + x) * 3 + 2];
+        // 正确写入帧缓冲
+        int idx = (y * width + x) * 3;
+        framePixels[idx + 0] = r;
+        framePixels[idx + 1] = g;
+        framePixels[idx + 2] = b;
     }
 }
 
@@ -265,7 +259,8 @@ extern "C" void Rasterize_An_Object(Frame& frame, const RenderData& obj, const i
     // ----- 启动内核 -----
     RasterizeQuadKernel << <gridSize, blockSize >> > (
         d_frame, width, height,
-        obj.inverse_trans,          // inverse_trans 已在设备端？如果是主机端，也需要拷贝
+        xStart, yStart,                     // 传入偏移
+        obj.inverse_trans,
         d_points,
         d_tex,
         obj.texture.width, obj.texture.height,
