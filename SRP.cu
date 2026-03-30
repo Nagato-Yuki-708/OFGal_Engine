@@ -206,9 +206,10 @@ __global__ void RasterizeQuadKernel(
 
         // 正确写入帧缓冲
         int idx = (y * width + x) * 3;
-        framePixels[idx + 0] = r;
-        framePixels[idx + 1] = g;
-        framePixels[idx + 2] = b;
+        float alpha_multiple = texPixels[(j * texWidth + i) * 4 + 3] / 255.0f;
+        framePixels[idx + 0] = r * alpha_multiple + framePixels[idx + 0] * (1.0f - alpha_multiple);
+        framePixels[idx + 1] = g * alpha_multiple + framePixels[idx + 1] * (1.0f - alpha_multiple);
+        framePixels[idx + 2] = b * alpha_multiple + framePixels[idx + 2] * (1.0f - alpha_multiple);
     }
 }
 
@@ -257,9 +258,9 @@ extern "C" void Rasterize_An_Object(Frame& frame, const RenderData& obj, const i
     cudaMemcpy(d_points, obj.points, pointsBytes, cudaMemcpyHostToDevice);
 
     // ----- 启动内核 -----
-    RasterizeQuadKernel << <gridSize, blockSize >> > (
+    RasterizeQuadKernel <<< gridSize, blockSize >>> (
         d_frame, width, height,
-        xStart, yStart,                     // 传入偏移
+        xStart, yStart,
         obj.inverse_trans,
         d_points,
         d_tex,
@@ -269,14 +270,10 @@ extern "C" void Rasterize_An_Object(Frame& frame, const RenderData& obj, const i
 
     // ----- 错误检查 -----
     cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        printf("Kernel launch error: %s\n", cudaGetErrorString(err));
-    }
+    // 检查1
     cudaDeviceSynchronize();
     err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        printf("Kernel execution error: %s\n", cudaGetErrorString(err));
-    }
+    // 检查2
 
     // ----- 拷贝结果回主机 -----
     cudaMemcpy(frame.pixels.data(), d_frame, frameBytes, cudaMemcpyDeviceToHost);

@@ -25,6 +25,7 @@ public:
     }
 private:
     RenderingSystem() {
+        /*
         initializeConsoleDrawer();
         CanvasSize = getMaxCanvasSize();
 
@@ -35,6 +36,7 @@ private:
 
         Frame frame = Rasterize(RenderObjects);
         drawFrame(frame);
+        */
     }
     ~RenderingSystem() = default;
 
