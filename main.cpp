@@ -13,7 +13,7 @@
 std::atomic<bool> running(true);    //创建原子变量，表示程序是否在运行
 void InputThread(InputCollector* collector) {
 	while (running) {
-		collector->update();    //不断的调用采集函数，这就是单开一个线程之后的效果，能够不断的采集输入事件
+		collector->update();
 	}
 	Sleep(20);
 }
@@ -27,8 +27,8 @@ int main() {
 	InputCollector collector(&inputSystem);
 	std::thread inputThread(InputThread, &collector);
 	
-	// inputThread.join();  //用于等待输入线程的结束
-	
 	system("pause");
+	running = false;
+	inputThread.join();  // 等待子线程结束
 	return 0;
 }
