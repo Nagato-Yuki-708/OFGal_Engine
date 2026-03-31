@@ -126,7 +126,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AudioClip.cpp" />
     <ClCompile Include="BMP_Reader.cpp" />
     <ClCompile Include="cmdDrawer.cpp" />
     <ClCompile Include="main.cpp" />
@@ -140,12 +139,12 @@
     <None Include="Pic2Pix.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AudioClip.h" />
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
     <ClInclude Include="SoundEvents.h" />
     <ClInclude Include="SoundSystem.h" />
     <ClInclude Include="_EventBus.h" />
+    <ClInclude Include="SharedTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="莉可丽丝1.bmp" />
