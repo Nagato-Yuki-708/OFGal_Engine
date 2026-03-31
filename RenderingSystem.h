@@ -28,7 +28,7 @@ private:
         
         initializeConsoleDrawer();
         CanvasSize = getMaxCanvasSize();
-
+        /*
         RefreshRenderObjects(_EventBus::getInstance().publish_ReadLevelData("E:\\Projects\\C++Projects\\OFGal_Engine\\TestLevel1.level"));
         AABB_Remove(RenderObjects);
         SortByDepth(RenderObjects);
@@ -36,7 +36,7 @@ private:
 
         Frame frame = Rasterize_ANISOTROPIC(RenderObjects,16);
         drawFrame(frame);
-        
+        */
     }
     ~RenderingSystem() = default;
 
