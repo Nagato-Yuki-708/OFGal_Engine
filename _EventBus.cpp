@@ -106,3 +106,30 @@ void _EventBus::subscribe_ReadBPData(ReadBPData_Handler handler)
 {
     handlers_ReadBPData.push_back(handler);
 }
+/*
+==========================================
+渲染系统事件订阅与发布
+==========================================
+*/
+void _EventBus::publish_RenderAndPrint(const LevelData& currentLevel, TextureSamplingMethod samplingMethod, int MSAA_Multiple)
+{
+    for (auto& handler : handlers_RenderAndPrint)
+    {
+        handler(currentLevel, samplingMethod, MSAA_Multiple);
+    }
+}
+void _EventBus::subscribe_RenderAndPrint(RenderAndPrint_Handler handler)
+{
+    handlers_RenderAndPrint.push_back(handler);
+}
+void _EventBus::publish_RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel, int MSAA_Multiple)
+{
+    for (auto& handler : handlers_RenderAndPrint_ANISOTROPIC)
+    {
+        handler(currentLevel, anisoLevel, MSAA_Multiple);
+    }
+}
+void _EventBus::subscribe_RenderAndPrint_ANISOTROPIC(RenderAndPrint_ANISOTROPIC_Handler handler)
+{
+    handlers_RenderAndPrint_ANISOTROPIC.push_back(handler);
+}

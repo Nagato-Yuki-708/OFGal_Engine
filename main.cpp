@@ -27,7 +27,7 @@ int main() {
 	InputCollector collector(&inputSystem);
 	std::thread inputThread(InputThread, &collector);
 	
-	system("pause");
+	//system("pause");
 	running = false;
 	inputThread.join();  // 等待子线程结束
 	return 0;

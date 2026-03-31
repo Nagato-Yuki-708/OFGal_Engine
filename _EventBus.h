@@ -38,7 +38,14 @@ public:
     ==========================================
     */
 	using InputEvent_Handler = std::function <void(const InputEvent&)>;
-	//其它事件类型，请自行添加
+    /*
+    ==========================================
+    渲染系统事件
+    ==========================================
+    */
+    using RenderAndPrint_Handler = std::function < void(const LevelData&, TextureSamplingMethod, int) >;
+    using RenderAndPrint_ANISOTROPIC_Handler = std::function < void(const LevelData&, int, int) >;
+
 
 
     void subscribe_SoundPlay(SoundPlay_Handler handler);
@@ -61,7 +68,11 @@ public:
 
 	void subscribe_InputEvent(InputEvent_Handler handler);
 	void publish_InputEvent(const InputEvent& event);
-	// 其它事件订阅和发布函数，请像上面两个函数一样自行添加
+	
+    void subscribe_RenderAndPrint(RenderAndPrint_Handler handler);
+    void publish_RenderAndPrint(const LevelData& currentLevel, TextureSamplingMethod samplingMethod, int MSAA_Multiple);
+    void subscribe_RenderAndPrint_ANISOTROPIC(RenderAndPrint_ANISOTROPIC_Handler handler);
+    void publish_RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel, int MSAA_Multiple);
 
 
 private:
@@ -79,5 +90,8 @@ private:
 	std::vector<SoundPlay_Handler> handlers_SoundPlay;  // 所有播放音频事件订阅者，按理来说只有 音频系统 会订阅
 
 	std::vector<InputEvent_Handler> handlers_InputEvent;  //输入事件订阅者存放的容器
+
+    std::vector<RenderAndPrint_Handler> handlers_RenderAndPrint;
+    std::vector<RenderAndPrint_ANISOTROPIC_Handler> handlers_RenderAndPrint_ANISOTROPIC;
 	// 其它订阅者类型，请像上面一样自行添加
 };

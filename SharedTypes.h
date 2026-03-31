@@ -281,3 +281,10 @@ struct RenderData {
 	BMP_Data texture;
 	std::vector<int> depth;		// 分级深度，顺序：父 -> 子
 };
+// 纹理采样方法枚举
+enum TextureSamplingMethod {
+	SAMPLING_NEAREST = 0,
+	SAMPLING_BILINEAR = 1,
+	SAMPLING_BICUBIC = 2,
+	SAMPLING_ANISOTROPIC = 3
+};

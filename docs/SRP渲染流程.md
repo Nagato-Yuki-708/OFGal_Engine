@@ -70,7 +70,7 @@ struct RenderData {
 ### Bloom泛光
 ### 抗锯齿
 #### FXAA
-#### SMAA
+#### MSAA
 ### 景深
 ### 定向模糊
 ### 颜色分级与调色

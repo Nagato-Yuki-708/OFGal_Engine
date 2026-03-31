@@ -139,7 +139,7 @@ void RenderingSystem::RefreshDepth(std::vector<RenderData>& renderObjects) {
             renderObjects[i - 1].points[j].z = i;
 }
 
-Frame RenderingSystem::Rasterize(std::vector<RenderData>& renderObjects, int MSAA_Multiple) {
+Frame RenderingSystem::Rasterize(std::vector<RenderData>& renderObjects, TextureSamplingMethod samplingMethod, int MSAA_Multiple) {
     Frame result;
     result.width = CanvasSize.x;
     result.height = CanvasSize.y;
@@ -150,7 +150,7 @@ Frame RenderingSystem::Rasterize(std::vector<RenderData>& renderObjects, int MSA
         MSAA_Multiple = 1;
 
     for (RenderData& renderData : renderObjects) {
-        Rasterize_An_Object(result, renderData, SAMPLING_BICUBIC, 1, MSAA_Multiple);
+        Rasterize_An_Object(result, renderData, samplingMethod, 1, MSAA_Multiple);
     }
 
     return result;
@@ -172,4 +172,25 @@ Frame RenderingSystem::Rasterize_ANISOTROPIC(std::vector<RenderData>& renderObje
     }
 
     return result;
+}
+
+void RenderingSystem::RenderAndPrint(const LevelData& currentLevel, TextureSamplingMethod samplingMethod, int MSAA_Multiple) {
+    RefreshRenderObjects(_EventBus::getInstance().publish_ReadLevelData("E:\\Projects\\C++Projects\\OFGal_Engine\\TestLevel1.level"));
+    //RefreshRenderObjects(currentLevel);
+    AABB_Remove(RenderObjects);
+    SortByDepth(RenderObjects);
+    RefreshDepth(RenderObjects);
+
+    Frame frame = Rasterize(RenderObjects, samplingMethod, MSAA_Multiple);
+    drawFrame(frame);
+}
+void RenderingSystem::RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel, int MSAA_Multiple) {
+    RefreshRenderObjects(_EventBus::getInstance().publish_ReadLevelData("E:\\Projects\\C++Projects\\OFGal_Engine\\TestLevel1.level"));
+    //RefreshRenderObjects(currentLevel);
+    AABB_Remove(RenderObjects);
+    SortByDepth(RenderObjects);
+    RefreshDepth(RenderObjects);
+
+    Frame frame = Rasterize_ANISOTROPIC(RenderObjects, anisoLevel, MSAA_Multiple);
+    drawFrame(frame);
 }

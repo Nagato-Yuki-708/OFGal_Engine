@@ -93,6 +93,12 @@
     <ClCompile Include="GameVM.cpp">
       <Filter>Source Files\GameVM</Filter>
     </ClCompile>
+    <ClCompile Include="InputCollector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InputSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -128,11 +134,20 @@
     <ClInclude Include="SRP.cuh">
       <Filter>Header Files\CUDA_SpeedUp</Filter>
     </ClInclude>
-    <ClInclude Include="PPRP.cuh">
-      <Filter>Header Files\CUDA_SpeedUp</Filter>
-    </ClInclude>
     <ClInclude Include="FrameProcessing.cuh">
       <Filter>Header Files\CUDA_SpeedUp</Filter>
+    </ClInclude>
+    <ClInclude Include="InputCollector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyCode.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -154,9 +169,6 @@
       <Filter>Source Files\CUDA_SpeedUp</Filter>
     </CudaCompile>
     <CudaCompile Include="SRP.cu">
-      <Filter>Source Files\CUDA_SpeedUp</Filter>
-    </CudaCompile>
-    <CudaCompile Include="PPRP.cu">
       <Filter>Source Files\CUDA_SpeedUp</Filter>
     </CudaCompile>
     <CudaCompile Include="FrameProcessing.cu">

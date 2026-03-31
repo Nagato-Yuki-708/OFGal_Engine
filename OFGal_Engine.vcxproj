@@ -147,7 +147,6 @@
     <CudaCompile Include="Pic2Pix.cu">
       <FileType>Document</FileType>
     </CudaCompile>
-    <CudaCompile Include="PPRP.cu" />
     <CudaCompile Include="SRP.cu" />
     <None Include="packages.config" />
     <None Include="Pic2Pix.cuh" />
@@ -165,7 +164,6 @@
     <ClInclude Include="Json_BPData_ReadWrite.h" />
     <ClInclude Include="Json_LevelData_ReadWrite.h" />
     <ClInclude Include="KeyCode.h" />
-    <ClInclude Include="PPRP.cuh" />
     <ClInclude Include="ProjectStructureGetter.h" />
     <ClInclude Include="RenderingSystem.h" />
     <ClInclude Include="SharedTypes.h" />

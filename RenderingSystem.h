@@ -5,7 +5,6 @@
 #include "BMP_Reader.h"
 #include "cmdDrawer.h"
 #include "SRP.cuh"
-#include "PPRP.cuh"
 #include "FrameProcessing.cuh"
 #include "SharedTypes.h"
 #include "_EventBus.h"
@@ -23,20 +22,25 @@ public:
         static RenderingSystem instance;
         return instance;
     }
+    void RenderAndPrint(const LevelData& currentLevel, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
+    void RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel = 1, int MSAA_Multiple = 1);
 private:
     RenderingSystem() {
         
         initializeConsoleDrawer();
         CanvasSize = getMaxCanvasSize();
-        /*
-        RefreshRenderObjects(_EventBus::getInstance().publish_ReadLevelData("E:\\Projects\\C++Projects\\OFGal_Engine\\TestLevel1.level"));
-        AABB_Remove(RenderObjects);
-        SortByDepth(RenderObjects);
-        RefreshDepth(RenderObjects);
-
-        Frame frame = Rasterize_ANISOTROPIC(RenderObjects,16);
-        drawFrame(frame);
-        */
+        //CanvasSize.x = 1267; CanvasSize.y = 737;
+        
+        _EventBus::getInstance().subscribe_RenderAndPrint(
+            [this](const LevelData& level, TextureSamplingMethod method, int msaa) {
+                this->RenderAndPrint(level, method, msaa);
+            }
+        );
+        _EventBus::getInstance().subscribe_RenderAndPrint_ANISOTROPIC(
+            [this](const LevelData& level, int anisoLevel, int msaa) {
+                this->RenderAndPrint_ANISOTROPIC(level, anisoLevel, msaa);
+            }
+        );
     }
     ~RenderingSystem() = default;
 
@@ -44,6 +48,6 @@ private:
     void AABB_Remove(std::vector<RenderData>& renderObjects);
     void SortByDepth(std::vector<RenderData>& renderObjects);
     void RefreshDepth(std::vector<RenderData>& renderObjects);
-    Frame Rasterize(std::vector<RenderData>& renderObjects, int MSAA_Multiple = 1);
+    Frame Rasterize(std::vector<RenderData>& renderObjects, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
     Frame Rasterize_ANISOTROPIC(std::vector<RenderData>& renderObjects, int anisoLevel = 1, int MSAA_Multiple = 1);
 };

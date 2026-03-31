@@ -60,7 +60,8 @@ __device__ float bsplineWeight(float x) {
     }
 }
 
-// ========== 各向异性采样辅助：双线性采样单个点 ==========
+// ========== 各向异性采样辅助==========
+// 1.双线性插值采样
 __device__ void bilinearSample(float i, float j,
     const unsigned char* texPixels, int texWidth, int texHeight,
     float& outR, float& outG, float& outB, float& outA) {
@@ -95,6 +96,53 @@ __device__ void bilinearSample(float i, float j,
         + (texPixels[idxBL + 2] * one_minus_u + texPixels[idxBR + 2] * u) * v;
     outA = (texPixels[idxTL + 3] * one_minus_u + texPixels[idxTR + 3] * u) * one_minus_v
         + (texPixels[idxBL + 3] * one_minus_u + texPixels[idxBR + 3] * u) * v;
+}
+// 2.双三次插值采样
+__device__ void bicubicSample(float i, float j,
+    const unsigned char* texPixels, int texWidth, int texHeight,
+    float& outR, float& outG, float& outB, float& outA) {
+    i = fmaxf(0.0f, fminf(i, texWidth - 1.0f));
+    j = fmaxf(0.0f, fminf(j, texHeight - 1.0f));
+
+    int i0 = (int)floorf(i);
+    int j0 = (int)floorf(j);
+    float u = i - i0;
+    float v = j - j0;
+
+    float sumR = 0.0f, sumG = 0.0f, sumB = 0.0f, sumA = 0.0f;
+    float totalWeight = 0.0f;
+
+    for (int dy = -1; dy <= 2; ++dy) {
+        for (int dx = -1; dx <= 2; ++dx) {
+            int ix = i0 + dx;
+            int iy = j0 + dy;
+            ix = max(0, min(ix, texWidth - 1));
+            iy = max(0, min(iy, texHeight - 1));
+
+            float wx = bsplineWeight(dx - u);
+            float wy = bsplineWeight(dy - v);
+            //float wx = cubicWeight(dx - u);
+            //float wy = cubicWeight(dy - v);
+            float w = wx * wy;
+
+            int idx = (iy * texWidth + ix) * 4;
+            sumR += texPixels[idx + 0] * w;
+            sumG += texPixels[idx + 1] * w;
+            sumB += texPixels[idx + 2] * w;
+            sumA += texPixels[idx + 3] * w;
+            totalWeight += w;
+        }
+    }
+
+    if (totalWeight > 1e-6f) {
+        outR = sumR / totalWeight;
+        outG = sumG / totalWeight;
+        outB = sumB / totalWeight;
+        outA = sumA / totalWeight;
+    }
+    else {
+        outR = outG = outB = outA = 0.0f;
+    }
 }
 
 // ========== 统一采样接口 ==========
@@ -163,7 +211,6 @@ __device__ void sampleTexture(float texX, float texY,
         break;
     }
     case SAMPLING_ANISOTROPIC: {
-        // 各向异性采样：沿主方向采样多个点并平均
         int samples = max(1, min(anisoLevel, 16));
         float dir_u, dir_v;
         if (dudx * dudx + dvdx * dvdx >= dudy * dudy + dvdy * dvdy) {
@@ -185,7 +232,9 @@ __device__ void sampleTexture(float texX, float texY,
             float sampleX = texX + start_u + s * step_u;
             float sampleY = texY + start_v + s * step_v;
             float r, g, b, a;
+            
             bilinearSample(sampleX, sampleY, texPixels, texWidth, texHeight, r, g, b, a);
+            // bicubicSample(sampleX, sampleY, texPixels, texWidth, texHeight, r, g, b, a);
             sumR += r;
             sumG += g;
             sumB += b;
@@ -214,48 +263,108 @@ __global__ void RasterizeQuadKernel(
     const unsigned char* texPixels,
     int texWidth, int texHeight,
     TextureSamplingMethod method,
-    int anisoLevel) {
+    int anisoLevel,
+    int msaa) {  // 新增 MSAA 参数
 
     int x = offsetX + blockIdx.x * blockDim.x + threadIdx.x;
     int y = offsetY + blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height) return;
 
-    float px = x + 0.5f;
-    float py = y + 0.5f;
+    // ---------- 根据 MSAA 值定义采样点偏移 ----------
+    int numSamples = 1;
+    float offsets[16][2];  // 最多支持16个采样点
+    switch (msaa) {
+    case 1:
+        numSamples = 1;
+        offsets[0][0] = 0.5f; offsets[0][1] = 0.5f;
+        break;
+    case 2:
+        numSamples = 2;
+        offsets[0][0] = 0.25f; offsets[0][1] = 0.5f;
+        offsets[1][0] = 0.75f; offsets[1][1] = 0.5f;
+        break;
+    case 4:
+        numSamples = 4;
+        offsets[0][0] = 0.25f; offsets[0][1] = 0.25f;
+        offsets[1][0] = 0.75f; offsets[1][1] = 0.25f;
+        offsets[2][0] = 0.25f; offsets[2][1] = 0.75f;
+        offsets[3][0] = 0.75f; offsets[3][1] = 0.75f;
+        break;
+    default:  // 其他值默认按 4 处理
+        numSamples = 4;
+        offsets[0][0] = 0.25f; offsets[0][1] = 0.25f;
+        offsets[1][0] = 0.75f; offsets[1][1] = 0.25f;
+        offsets[2][0] = 0.25f; offsets[2][1] = 0.75f;
+        offsets[3][0] = 0.75f; offsets[3][1] = 0.75f;
+        break;
+    }
 
-    // 将四边形拆为两个三角形进行包含测试
-    Vector3D tri1[3] = { points[0], points[1], points[2] };
-    Vector3D tri2[3] = { points[0], points[2], points[3] };
-    bool inside = isPointInTriangle(px, py,
-        tri1[0].x, tri1[0].y, tri1[1].x, tri1[1].y, tri1[2].x, tri1[2].y) ||
-        isPointInTriangle(px, py,
-            tri2[0].x, tri2[0].y, tri2[1].x, tri2[1].y, tri2[2].x, tri2[2].y);
-    if (!inside) return;
-
-    // 计算纹理坐标
-    Vector3D P = { px, py, 1 };
-    Vector3D texCoord = mulMatrixVector(inverse_trans, P);
-    float texX = texCoord.x;
-    float texY = texCoord.y;
-
-    // 获取偏导数（用于各向异性）
+    // 偏导数恒定，在循环外计算一次即可
     float dudx = inverse_trans.m[0][0];
     float dudy = inverse_trans.m[0][1];
     float dvdx = inverse_trans.m[1][0];
     float dvdy = inverse_trans.m[1][1];
 
-    // 采样纹理
-    float r, g, b, a;
-    sampleTexture(texX, texY, texPixels, texWidth, texHeight,
-        method, anisoLevel, r, g, b, a,
-        dudx, dudy, dvdx, dvdy);
+    // 累积变量
+    float totalWeightedR = 0.0f, totalWeightedG = 0.0f, totalWeightedB = 0.0f;
+    float totalAlpha = 0.0f;
 
-    // Alpha 混合写入帧缓冲（帧缓冲为 RGB 格式）
-    float alpha = a / 255.0f;
+    // 遍历所有子采样点
+    for (int s = 0; s < numSamples; ++s) {
+        float sx = x + offsets[s][0];
+        float sy = y + offsets[s][1];
+
+        // 包含测试（四边形拆分为两个三角形）
+        Vector3D tri1[3] = { points[0], points[1], points[2] };
+        Vector3D tri2[3] = { points[0], points[2], points[3] };
+        bool inside = isPointInTriangle(sx, sy,
+            tri1[0].x, tri1[0].y, tri1[1].x, tri1[1].y, tri1[2].x, tri1[2].y) ||
+            isPointInTriangle(sx, sy,
+                tri2[0].x, tri2[0].y, tri2[1].x, tri2[1].y, tri2[2].x, tri2[2].y);
+        if (!inside) continue;  // 未覆盖，跳过该采样点
+
+        // 计算纹理坐标
+        Vector3D P = { sx, sy, 1.0f };
+        Vector3D texCoord = mulMatrixVector(inverse_trans, P);
+        float texX = texCoord.x;
+        float texY = texCoord.y;
+
+        // 采样纹理
+        float r, g, b, a;
+        sampleTexture(texX, texY, texPixels, texWidth, texHeight,
+            method, anisoLevel, r, g, b, a,
+            dudx, dudy, dvdx, dvdy);
+
+        float alpha = a / 255.0f;
+        totalWeightedR += r * alpha;
+        totalWeightedG += g * alpha;
+        totalWeightedB += b * alpha;
+        totalAlpha += alpha;
+    }
+
+    // 没有采样点被覆盖，直接返回
+    if (totalAlpha <= 0.0f) return;
+
+    // 计算平均覆盖颜色和覆盖比例
+    float invTotalAlpha = 1.0f / totalAlpha;
+    float avgR = totalWeightedR * invTotalAlpha;
+    float avgG = totalWeightedG * invTotalAlpha;
+    float avgB = totalWeightedB * invTotalAlpha;
+    float coverage = totalAlpha / numSamples;  // 覆盖比例 = 平均 Alpha
+
+    // 与帧缓冲混合
     int idx = (y * width + x) * 3;
-    framePixels[idx + 0] = (unsigned char)(r * alpha + framePixels[idx + 0] * (1.0f - alpha));
-    framePixels[idx + 1] = (unsigned char)(g * alpha + framePixels[idx + 1] * (1.0f - alpha));
-    framePixels[idx + 2] = (unsigned char)(b * alpha + framePixels[idx + 2] * (1.0f - alpha));
+    float bgR = framePixels[idx + 0];
+    float bgG = framePixels[idx + 1];
+    float bgB = framePixels[idx + 2];
+
+    float finalR = avgR * coverage + bgR * (1.0f - coverage);
+    float finalG = avgG * coverage + bgG * (1.0f - coverage);
+    float finalB = avgB * coverage + bgB * (1.0f - coverage);
+
+    framePixels[idx + 0] = (unsigned char)finalR;
+    framePixels[idx + 1] = (unsigned char)finalG;
+    framePixels[idx + 2] = (unsigned char)finalB;
 }
 
 // ========== 主机端函数 ==========
@@ -299,7 +408,7 @@ extern "C" void Rasterize_An_Object(Frame& frame, const RenderData& obj,
     cudaMalloc(&d_points, 4 * sizeof(Vector3D));
     cudaMemcpy(d_points, obj.points, 4 * sizeof(Vector3D), cudaMemcpyHostToDevice);
 
-    // 启动统一内核
+    // 启动内核，传递 MSAA 参数
     RasterizeQuadKernel << <gridSize, blockSize >> > (
         d_frame, width, height,
         xStart, yStart,
@@ -307,7 +416,8 @@ extern "C" void Rasterize_An_Object(Frame& frame, const RenderData& obj,
         d_points,
         d_tex,
         obj.texture.width, obj.texture.height,
-        method, anisoLevel);
+        method, anisoLevel,
+        MSAA);  // 传入 MSAA 值
 
     cudaDeviceSynchronize();
     cudaMemcpy(frame.pixels.data(), d_frame, frameBytes, cudaMemcpyDeviceToHost);
