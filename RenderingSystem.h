@@ -22,8 +22,11 @@ public:
         static RenderingSystem instance;
         return instance;
     }
+    Frame Render_A_Frame(const LevelData& currentLevel, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
+    Frame Render_A_Frame_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel = 1, int MSAA_Multiple = 1);
     void RenderAndPrint(const LevelData& currentLevel, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
     void RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel = 1, int MSAA_Multiple = 1);
+    void Print_A_Frame(const Frame& frame);
 private:
     RenderingSystem() {
         
@@ -41,6 +44,14 @@ private:
                 this->RenderAndPrint_ANISOTROPIC(level, anisoLevel, msaa);
             }
         );
+
+        Frame test = Render_A_Frame(_EventBus::getInstance().publish_ReadLevelData("E:\\Projects\\C++Projects\\OFGal_Engine\\TestLevel1.level"));
+        //applyBloom(test);
+        //applyFXAA(test, 0.2f, 0.08f, 10.0f, 0.125f, 0.01f);
+        //applySMAA(test, 0.08f, 6, true);
+        //applyLensDistortion(test, -0.15f);
+        //applyChromaticAberration(test, 5.0f, 1);
+        Print_A_Frame(test);
     }
     ~RenderingSystem() = default;
 

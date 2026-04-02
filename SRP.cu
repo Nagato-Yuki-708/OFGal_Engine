@@ -233,8 +233,8 @@ __device__ void sampleTexture(float texX, float texY,
             float sampleY = texY + start_v + s * step_v;
             float r, g, b, a;
             
-            bilinearSample(sampleX, sampleY, texPixels, texWidth, texHeight, r, g, b, a);
-            // bicubicSample(sampleX, sampleY, texPixels, texWidth, texHeight, r, g, b, a);
+            // bilinearSample(sampleX, sampleY, texPixels, texWidth, texHeight, r, g, b, a);
+            bicubicSample(sampleX, sampleY, texPixels, texWidth, texHeight, r, g, b, a);
             sumR += r;
             sumG += g;
             sumB += b;
