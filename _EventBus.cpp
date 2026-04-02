@@ -16,13 +16,13 @@ void _EventBus::publish_SoundPlay(const char* sound_path)
 void _EventBus::subscribe_SoundPlay(SoundPlay_Handler handler)
 {
     handlers_SoundPlay.push_back(handler);}
-void _EventBus::publish_InputEvent(const InputEvent& event) {
+void _EventBus::publish_InputEvent(const InputEvent& event) {   //这里的逻辑没有问题，分别调用数组中的函数指针，并将事件作为参数传入
     for (auto& handler : handlers_InputEvent) {
         handler(event);
     }
 }
 void _EventBus::subscribe_InputEvent(InputEvent_Handler handler) {
-    handlers_InputEvent.push_back(handler);
+    handlers_InputEvent.push_back(handler);       //这个地方的代码也是对的，将函数的指针塞入数组
 }
 /*
 ==========================================

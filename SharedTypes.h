@@ -224,7 +224,6 @@ public:
 	void pushEvent(const InputEvent& event);   //添加输入事件,
 	const std::vector<InputEvent>& getEvents();  //获取输入事件
 private:
-	std::vector<InputEvent>events;  //输入事件队列
 	std::mutex mtx;   //创建一个互斥锁；
 };
 enum class InputType {
@@ -249,3 +248,4 @@ enum class KeyCode {
 	MouseMiddle,
 	W
 };
+InputSystem inputSystem;  //全局输入系统实例

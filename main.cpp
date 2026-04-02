@@ -21,8 +21,6 @@ int main() {
 	FileSystem::getInstance();
 	GameVM::getInstance();
 	RenderingSystem::getInstance();
-
-	InputSystem inputSystem;   //创建输入系统实例
 	InputCollector collector(&inputSystem);
 	std::thread inputThread(InputThread, &collector);
 	while (running)

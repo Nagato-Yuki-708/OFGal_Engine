@@ -2,7 +2,6 @@
 #include <functional>
 #include <vector>
 #include "SharedTypes.h"		//结构体统一定义头文件，其中包含了所有需要用于系统间通信的结构体
-#include "InputEvent.h"
 
 class _EventBus {
     //使用单例模式
@@ -54,7 +53,7 @@ public:
     BlueprintData publish_ReadBPData(const std::string& filepath);
     void publish_WriteBPData(const std::string& filepath, const BlueprintData& data);
 	void subscribe_InputEvent(InputEvent_Handler handler);
-	void publish_InputEvent(const InputEvent& event);
+	void publish_InputEvent(const InputEvent& event);     //注意这里是将自定义的输入事件作为结构体
 	// 其它事件订阅和发布函数，请像上面两个函数一样自行添加
 
 
