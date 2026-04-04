@@ -18,15 +18,15 @@ void InputThread(InputCollector* collector) {
 	Sleep(20);
 }
 int main() {
-	_EventBus::getInstance();
-	FileSystem::getInstance();
-	GameVM::getInstance();
-	RenderingSystem::getInstance();
+	_EventBus* pEventBus = &_EventBus::getInstance();
+	FileSystem* pFileSystem = &FileSystem::getInstance();
+	GameVM* pGameVM = &GameVM::getInstance();
+	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
 
 	InputSystem inputSystem;
 	InputCollector collector(&inputSystem);
 	std::thread inputThread(InputThread, &collector);
-	
+
 	//system("pause");
 	running = false;
 	inputThread.join();  // 等待子线程结束
