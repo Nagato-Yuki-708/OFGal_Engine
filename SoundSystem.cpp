@@ -1,11 +1,39 @@
 ﻿#include "SoundSystem.h"
 #include "SharedTypes.h"
+#include "_EventBus.h"
 #include <windows.h>
 #include <mmsystem.h>
 
 #pragma comment(lib, "winmm.lib")
 
-SoundSystem::SoundSystem() {}
+SoundSystem::SoundSystem() {
+        auto& bus = _EventBus::getInstance();
+
+        bus.subscribe_PlaySound([this](const PlaySoundEvent& playEvent) {
+            playSound(playEvent.path, playEvent.loop);
+            });
+
+        bus.subscribe_PauseSound([this](const PauseSoundEvent& playEvent) {
+            pauseSound(playEvent.path);
+            });
+
+        bus.subscribe_StopSound([this](const StopSoundEvent& playEvent) {
+            stopSound(playEvent.path);
+            });
+
+        bus.subscribe_StopAllSound([this](const StopAllSoundEvent&) {
+            stopAllSounds();
+            });
+
+        bus.subscribe_SetVolume([this](const SetVolumeEvent& playEvent) {
+            SetVolume(playEvent.volume);
+            });
+
+        bus.subscribe_SetSoundVolume([this](const SetSoundVolumeEvent& playEvent) {
+            SetSoundVolume(playEvent.path, playEvent.volume);
+            });
+  
+}
 
 SoundSystem::~SoundSystem() {
     Shutdown();
