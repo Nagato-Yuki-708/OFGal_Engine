@@ -99,6 +99,9 @@
     <ClCompile Include="InputCollector.cpp">
       <Filter>Source Files\InputSystem</Filter>
     </ClCompile>
+    <ClCompile Include="SoundSystem.cpp">
+      <Filter>Source Files\SoundSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -148,6 +151,12 @@
     </ClInclude>
     <ClInclude Include="InputSystem.h">
       <Filter>Header Files\InputSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundSystem.h">
+      <Filter>Header Files\SoundSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundEvents.h">
+      <Filter>Header Files\SoundSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

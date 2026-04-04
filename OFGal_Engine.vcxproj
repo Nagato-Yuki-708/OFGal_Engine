@@ -140,6 +140,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProjectStructureGetter.cpp" />
     <ClCompile Include="RenderingSystem.cpp" />
+    <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="_EventBus.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -167,8 +168,10 @@
     <ClInclude Include="ProjectStructureGetter.h" />
     <ClInclude Include="RenderingSystem.h" />
     <ClInclude Include="SharedTypes.h" />
+    <ClInclude Include="SoundEvents.h" />
     <ClInclude Include="SRP.cuh" />
     <ClInclude Include="_EventBus.h" />
+    <ClInclude Include="SoundSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="莉可丽丝1.bmp" />
