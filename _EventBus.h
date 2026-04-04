@@ -57,13 +57,13 @@ private:
 	~_EventBus() = default;
 
 	// ===== 委托容器 =====
-	std::vector<PlaySound_Handler> playHandlers;
-	std::vector<PauseSound_Handler> pauseHandlers;
-	std::vector<StopSound_Handler> stopHandlers;
-	std::vector<StopAllSound_Handler> stopAllHandlers;
-	std::vector<SetVolume_Handler> volumeHandlers;
-	std::vector<SetSoundVolume_Handler> soundVolumeHandlers;
-	std::vector<SetSpeed_Handler> speedHandlers;
+	std::vector<PlaySound_Handler> Handlers_play;
+	std::vector<PauseSound_Handler> Handlers_pause;
+	std::vector<StopSound_Handler> Handlers_stop;
+	std::vector<StopAllSound_Handler> Handlers_stopAll;
+	std::vector<SetVolume_Handler> Handlers_volume;
+	std::vector<SetSoundVolume_Handler> Handlers_soundVolume;
+	std::vector<SetSpeed_Handler> Handlers_speed;
 
 	std::vector<SoundPlay_Handler> handlers_SoundPlay;  // 所有播放音频事件订阅者，按理来说只有 音频系统 会订阅
 	// 其它订阅者类型，请像上面一样自行添加
