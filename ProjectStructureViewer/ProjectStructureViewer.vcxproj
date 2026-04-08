@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{7c962724-b67a-46e5-887c-86b4855e3fe0}</ProjectGuid>
-    <RootNamespace>OFGalEngine</RootNamespace>
+    <ProjectGuid>{6c0d6793-057f-4f88-bf67-b55d47e8a257}</ProjectGuid>
+    <RootNamespace>ProjectStructureViewer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -54,7 +54,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 13.0.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -109,10 +108,6 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <CudaCompile>
-      <AdditionalCompilerOptions>
-      </AdditionalCompilerOptions>
-    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -129,64 +124,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BMP_Reader.cpp" />
-    <ClCompile Include="cmdDrawer.cpp" />
-    <ClCompile Include="FileSystem.cpp" />
-    <ClCompile Include="GameVM.cpp" />
-    <ClCompile Include="InputCollector.cpp" />
-    <ClCompile Include="InputSystem.cpp" />
-    <ClCompile Include="Json_BPData_ReadWrite.cpp" />
-    <ClCompile Include="Json_LevelData_ReadWrite.cpp" />
+    <ClInclude Include="ProjectStructureGetter.h" />
+    <ClInclude Include="SharedTypes.h" />
+    <ClInclude Include="StructurePrinter.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProjectStructureGetter.cpp" />
-    <ClCompile Include="RenderingSystem.cpp" />
-    <ClCompile Include="SoundSystem.cpp" />
-    <ClCompile Include="WindowsSystem.cpp" />
-    <ClCompile Include="_EventBus.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="FrameProcessing.cu" />
-    <CudaCompile Include="Pic2Pix.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-    <CudaCompile Include="SRP.cu" />
-    <None Include="packages.config" />
-    <None Include="Pic2Pix.cuh" />
-    <None Include="TestLevel1.level" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="BMP_Reader.h" />
-    <ClInclude Include="cmdDrawer.h" />
-    <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="FrameProcessing.cuh" />
-    <ClInclude Include="GameVM.h" />
-    <ClInclude Include="InputCollector.h" />
-    <ClInclude Include="InputEvent.h" />
-    <ClInclude Include="InputSystem.h" />
-    <ClInclude Include="Json_BPData_ReadWrite.h" />
-    <ClInclude Include="Json_LevelData_ReadWrite.h" />
-    <ClInclude Include="KeyCode.h" />
-    <ClInclude Include="ProjectStructureGetter.h" />
-    <ClInclude Include="RenderingSystem.h" />
-    <ClInclude Include="SharedTypes.h" />
-    <ClInclude Include="SoundEvents.h" />
-    <ClInclude Include="SRP.cuh" />
-    <ClInclude Include="WindowsSystem.h" />
-    <ClInclude Include="_EventBus.h" />
-    <ClInclude Include="SoundSystem.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="莉可丽丝1.bmp" />
+    <ClCompile Include="StructurePrinter.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 13.0.targets" />
-    <Import Project="packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets" Condition="Exists('packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" />
   </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets'))" />
-  </Target>
 </Project>
