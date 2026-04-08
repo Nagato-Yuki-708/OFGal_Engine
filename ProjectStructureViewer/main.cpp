@@ -45,7 +45,7 @@ int main() {
             break;
         }
         else {
-            // 理论上不会到这里（因为只有两个事件）
+            // 理论上不会到这里
             std::cerr << "未知的等待结果" << std::endl;
             break;
         }
