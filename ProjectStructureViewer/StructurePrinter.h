@@ -20,5 +20,3 @@ std::string GetFolderPathByLine(int lineNumber);
 
 // 获取总行数（用于键盘边界判断）
 int GetTotalLines();
-
-void InitConsoleVTMode();

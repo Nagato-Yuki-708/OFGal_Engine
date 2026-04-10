@@ -86,7 +86,7 @@ bool HandleKeyboardInput(int& currentLine, const ProjectStructure* pProject) {
     if (handled && newLine != currentLine) {
         currentLine = newLine;
         // 清屏并重新绘制，高亮新行
-        std::cout << "\033[2J\033[H";
+        //std::cout << "\033[2J\033[H";
         PrintProjectStructureTree(*pProject, currentLine);
         // 打印选中信息
         const SelectedFolderInfo& info = GetSelectedFolderInfo();
@@ -100,7 +100,6 @@ bool HandleKeyboardInput(int& currentLine, const ProjectStructure* pProject) {
 int main(int argc, char* argv[]) {
     ProjectStructure* pProjectStructure = nullptr;
     SetupConsoleWindow();
-    InitConsoleVTMode();
 
     const char* projectRoot = nullptr;
     if (argc > 1) {
@@ -145,7 +144,7 @@ int main(int argc, char* argv[]) {
     std::string currentPath(localPath);
     if (!currentPath.empty()) {
         pProjectStructure = new ProjectStructure(GetProjectStructure(currentPath.c_str()));
-        std::cout << "\033[2J\033[H";
+        //std::cout << "\033[2J\033[H";
         PrintProjectStructureTree(*pProjectStructure, currentSelectedLine);
         const SelectedFolderInfo& info = GetSelectedFolderInfo();
         //std::cout << "\n当前选中: [" << info.lineNumber << "] " << info.absolutePath << std::endl;

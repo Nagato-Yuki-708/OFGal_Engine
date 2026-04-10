@@ -28,10 +28,8 @@ static bool IsVTSupported() {
     if (!GetConsoleMode(hOut, &dwMode)) return false;
     return (dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
 }
-static bool g_vtSupported = IsVTSupported();
-void InitConsoleVTMode() {
-    g_vtSupported = IsVTSupported();
-}
+static bool g_vtSupported = false;
+
 
 // 返回带颜色的树枝符号（若不支持VT则返回纯文本）
 std::string GetBranchString(const std::string& branchSymbol) {
@@ -135,10 +133,31 @@ void PrintFolderTree(const FolderStructure& folder,
 }
 
 void PrintProjectStructureTree(const ProjectStructure& project, int highlightLine) {
+    // 更新 VT 支持状态
+    g_vtSupported = IsVTSupported();
+
     g_displayInfo.width = 0;
     g_displayInfo.height = 0;
     g_lineToPathMap.clear();
     std::ostringstream buffer;
+
+    // 清屏 + 重置属性 + 光标归位（统一在 buffer 开头）
+    if (g_vtSupported) {
+        buffer << "\033[0m\033[2J\033[H";
+    }
+    else {
+        // 非 VT 环境用系统清屏（会闪烁，但极少发生）
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        COORD topLeft = { 0, 0 };
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        DWORD written;
+        if (GetConsoleScreenBufferInfo(hConsole, &csbi)) {
+            DWORD size = csbi.dwSize.X * csbi.dwSize.Y;
+            FillConsoleOutputCharacter(hConsole, ' ', size, topLeft, &written);
+            FillConsoleOutputAttribute(hConsole, csbi.wAttributes, size, topLeft, &written);
+            SetConsoleCursorPosition(hConsole, topLeft);
+        }
+    }
 
     // 提取根目录名
     std::string rootName = project.RootDirectory;
