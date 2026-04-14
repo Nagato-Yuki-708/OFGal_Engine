@@ -25,3 +25,21 @@ struct SelectedFolderInfo {
     std::string absolutePath;
     int lineNumber;
 };
+
+enum class Modifier {
+    None = 0,
+    Ctrl = 1 << 0,
+    Shift = 1 << 1,
+    Alt = 1 << 2
+};
+
+inline Modifier operator|(Modifier a, Modifier b) {
+    return static_cast<Modifier>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+struct KeyBinding {
+    int vk;                 // 虚拟键码 (如 'N', VK_DELETE)
+    Modifier modifiers;     // 需要的修饰键
+    KeyCode eventCode;      // 触发时生成的事件码
+    bool edgeOnly;          // true = 仅按下瞬间触发一次；false = 按下/释放均触发
+};

@@ -1,16 +1,27 @@
 #pragma once
 #include "Windows.h"
 #include "InputSystem.h"
+#include <vector>
+#include <unordered_map>
+#include "SharedTypes.h"
+
 class InputCollector {
 public:
-	InputCollector(InputSystem* system);
-	void update();   //核心轮询函数，能够查询当前的输入状态，并将输入事件添加到输入系统中
-private:
-	InputSystem* inputsystem;
-	bool prevSSatate = false;   //四个变量记录按键前一刻的状态
-	bool prevMouseLeft = false;
-	bool prevMouseRight = false;
-	bool prevMouseMiddle = false;
-	bool prevWState = false;
+    InputCollector(InputSystem* system);
+    void update();
 
+    // 注册一个按键绑定
+    void AddBinding(const KeyBinding& binding);
+
+private:
+    InputSystem* inputsystem;
+
+    std::vector<KeyBinding> m_bindings;
+    std::unordered_map<int, bool> m_keyStates;   // 记录各虚拟键前一帧状态
+
+    bool GetKeyState(int vk) const;
+    bool GetPrevKeyState(int vk) const;
+    void SetKeyState(int vk, bool down);
+
+    bool CheckModifiers(Modifier required) const;
 };

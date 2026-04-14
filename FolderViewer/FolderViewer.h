@@ -4,6 +4,9 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <unordered_map>
+
+#include "KeyCode.h"
 
 // 前向声明
 class InputSystem;
@@ -36,6 +39,7 @@ private:
     void OnRightClick();
     void OnCtrlN();
     void OnDelete();
+    void OnEnter();
 
     // 辅助：向父进程发送文件夹变更通知
     void NotifyParentFolderChanged(const std::string& newPath);
@@ -54,6 +58,9 @@ private:
     // 输入系统
     std::unique_ptr<InputSystem> m_inputSystem;
     std::unique_ptr<InputCollector> m_inputCollector;
+
+    // 事件映射表
+    std::unordered_map<KeyCode, std::function<void()>> m_actionMap;
 
     // 运行标志
     bool m_running;

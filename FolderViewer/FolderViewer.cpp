@@ -30,6 +30,29 @@ FolderViewer::FolderViewer()
 {
     m_inputSystem = std::make_unique<InputSystem>();
     m_inputCollector = std::make_unique<InputCollector>(m_inputSystem.get());
+
+    // 注册需要的按键绑定
+    // 单键：Delete（边缘触发，只关心按下瞬间）
+    m_inputCollector->AddBinding({ VK_DELETE, Modifier::None, KeyCode::Delete, true });
+
+    m_inputCollector->AddBinding({ VK_RETURN, Modifier::None, KeyCode::Enter, true });
+    //m_inputCollector->AddBinding({ VK_NUMPAD_ENTER, Modifier::None, KeyCode::Enter, true });
+
+    // 组合键：Ctrl+N（边缘触发）
+    m_inputCollector->AddBinding({ 'N', Modifier::Ctrl, KeyCode::CtrlN, true });
+
+    // 鼠标右键（边缘或状态均可，这里用状态变化以支持按下/释放事件）
+    m_inputCollector->AddBinding({ VK_RBUTTON, Modifier::None, KeyCode::MouseRight, false });
+
+    // 其他可选绑定，可根据需要添加，例如鼠标左键、中键、W 等
+    m_inputCollector->AddBinding({ 'W', Modifier::None, KeyCode::W, false });
+    // 若还需 Ctrl+S，可继续添加
+    m_inputCollector->AddBinding({ 'S', Modifier::Ctrl, KeyCode::CtrlS, true });
+
+    m_actionMap[KeyCode::MouseRight] = [this]() { OnRightClick(); };
+    m_actionMap[KeyCode::CtrlN] = [this]() { OnCtrlN(); };
+    m_actionMap[KeyCode::Delete] = [this]() { OnDelete(); };
+    m_actionMap[KeyCode::Enter] = [this]() { OnEnter(); };
 }
 
 FolderViewer::~FolderViewer() {
@@ -214,6 +237,16 @@ void FolderViewer::OnDelete() {
     NotifyParentFolderChanged(m_currentFolderPath);
 }
 
+void FolderViewer::OnEnter() {
+    // TODO: 实现按下 Enter 后的具体逻辑
+    std::cout << "[Enter] triggered on folder: " << m_currentFolderPath << std::endl;
+
+    // 示例：进入当前选中的文件夹（需结合您自己的选中逻辑）
+    // 这里仅为示意，实际可能需要读取用户选中的条目
+    // NotifyParentFolderChanged(m_currentFolderPath + "\\selected_subfolder");
+    NotifyParentFolderChanged(m_currentFolderPath);
+}
+
 void FolderViewer::MainLoop() {
     HANDLE events[2] = { m_hEventExit, m_hEventUpdatePath };
     const DWORD pollIntervalMs = 100;
@@ -239,18 +272,9 @@ void FolderViewer::MainLoop() {
         const auto& inputEvents = m_inputSystem->getEvents();
         for (const auto& ev : inputEvents) {
             if (ev.type == InputType::KeyDown) {
-                switch (ev.key) {
-                case KeyCode::MouseRight:
-                    OnRightClick();
-                    break;
-                case KeyCode::CtrlN:
-                    OnCtrlN();
-                    break;
-                case KeyCode::Delete:
-                    OnDelete();
-                    break;
-                default:
-                    break;
+                auto it = m_actionMap.find(ev.key);
+                if (it != m_actionMap.end()) {
+                    it->second();  // 执行对应函数
                 }
             }
         }

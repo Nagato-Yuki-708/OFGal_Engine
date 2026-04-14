@@ -1,43 +1,61 @@
 #include "InputCollector.h"
-#include "InputSystem.h"
 #include "InputEvent.h"
-#include "KeyCode.h"
 
-InputCollector::InputCollector(InputSystem* system) :inputsystem(system) {}    //构造函数，接受一个输入系统的指针，并将其保存在成员变量中，以便在update函数中使用
+InputCollector::InputCollector(InputSystem* system) : inputsystem(system) {}
+
+void InputCollector::AddBinding(const KeyBinding& binding) {
+    m_bindings.push_back(binding);
+}
+
+bool InputCollector::GetKeyState(int vk) const {
+    return (GetAsyncKeyState(vk) & 0x8000) != 0;
+}
+
+bool InputCollector::GetPrevKeyState(int vk) const {
+    auto it = m_keyStates.find(vk);
+    return (it != m_keyStates.end()) ? it->second : false;
+}
+
+void InputCollector::SetKeyState(int vk, bool down) {
+    m_keyStates[vk] = down;
+}
+
+bool InputCollector::CheckModifiers(Modifier required) const {
+    if (required == Modifier::None)
+        return true;
+
+    bool ctrlOk = !(static_cast<int>(required) & static_cast<int>(Modifier::Ctrl)) || GetKeyState(VK_CONTROL);
+    bool shiftOk = !(static_cast<int>(required) & static_cast<int>(Modifier::Shift)) || GetKeyState(VK_SHIFT);
+    bool altOk = !(static_cast<int>(required) & static_cast<int>(Modifier::Alt)) || GetKeyState(VK_MENU);
+    return ctrlOk && shiftOk && altOk;
+}
+
 void InputCollector::update() {
-	bool ctrlDown = (GetAsyncKeyState(VK_LCONTROL) & 0x8000) || (GetAsyncKeyState(VK_LCONTROL) & 0x8000);
-	bool sDown = (GetAsyncKeyState('S') & 0x8000) != 0;   //确认s被按下
-	bool wDown = (GetAsyncKeyState('W') & 0x8000) != 0;   //确认w被按下
-	bool sPressed = (sDown && !prevSSatate);     //确认s是刚刚按下
-	if (wDown!= prevWState) {
-		InputEvent event{};
-		event.key = KeyCode::W;
-		event.type = wDown ? InputType::KeyDown : InputType::KeyUp;
-		inputsystem->pushEvent(event);
-	}
-	prevWState = wDown;
-	if (ctrlDown && sPressed) {		//将事件加入事件的集合中
-		InputEvent event{};
-		event.key = KeyCode::CtrlS;
-		event.type = InputType::KeyDown;
-		inputsystem->pushEvent(event);   
-	}
-	prevSSatate = sDown ;
-	struct  MouseButton { int vk; bool* prev; KeyCode code; };
-	MouseButton buttons[]{     //用一个数据结构去概括所有的代码，更加简洁
-	 { VK_LBUTTON, &prevMouseLeft, KeyCode::MouseLeft },
-		{ VK_RBUTTON, &prevMouseRight, KeyCode::MouseRight },
-		{ VK_MBUTTON, &prevMouseMiddle, KeyCode::MouseMiddle }
-	};
-	for (auto b : buttons) {
-		bool down = (GetAsyncKeyState(b.vk) & 0x8000) != 0;
-		if (down != *(b.prev)) {    //如果状态变化，那么就生成事件
-			InputEvent event{};
-			event.key = b.code;
-			event.type = down ? InputType::KeyDown : InputType::KeyUp;
-			inputsystem->pushEvent(event);
-		
-		}
-		*(b.prev) = down;  //更新状态
-	}
+    for (const auto& binding : m_bindings) {
+        bool currentDown = GetKeyState(binding.vk);
+        bool prevDown = GetPrevKeyState(binding.vk);
+        bool modifiersMatch = CheckModifiers(binding.modifiers);
+
+        if (binding.edgeOnly) {
+            // 仅当按键从 up→down 且修饰键满足时触发一次
+            if (currentDown && !prevDown && modifiersMatch) {
+                InputEvent event{};
+                event.key = binding.eventCode;
+                event.type = InputType::KeyDown;
+                inputsystem->pushEvent(event);
+            }
+        }
+        else {
+            // 状态变化时生成对应事件（要求修饰键满足）
+            if (currentDown != prevDown && modifiersMatch) {
+                InputEvent event{};
+                event.key = binding.eventCode;
+                event.type = currentDown ? InputType::KeyDown : InputType::KeyUp;
+                inputsystem->pushEvent(event);
+            }
+        }
+
+        // 无论是否触发事件，都要更新状态记录
+        SetKeyState(binding.vk, currentDown);
+    }
 }
