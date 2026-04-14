@@ -4,6 +4,20 @@
 #include <iostream>
 #include <algorithm>
 
+std::string GetExecutableDirectoryA() {
+    char buffer[MAX_PATH];
+    // 1. 获取完整路径
+    DWORD length = GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    if (length == 0) return "";
+    // 2. 转换为string，手动截断
+    std::string fullPath(buffer, length);
+    size_t lastSlash = fullPath.find_last_of("\\/");
+    if (lastSlash != std::string::npos) {
+        return fullPath.substr(0, lastSlash);
+    }
+    return fullPath;
+}
+
 ConsoleManager::ConsoleManager()
     : m_hConsoleOut(GetStdHandle(STD_OUTPUT_HANDLE))
     , m_vtSupported(false)
@@ -19,10 +33,22 @@ ConsoleManager::ConsoleManager()
     }
 }
 
-void ConsoleManager::SetupWindow(int screenWidth, int workAreaHeight) {
+void ConsoleManager::SetupWindow() {
     HWND hwndConsole = GetConsoleWindow();
     if (hwndConsole) {
-        SetWindowPos(hwndConsole, nullptr, 0, double(double(workAreaHeight) * 0.7), double(double(screenWidth) * 0.1374), double(workAreaHeight) - double(double(workAreaHeight) * 0.7), SWP_NOZORDER | SWP_NOACTIVATE);
+        HWND MAX_Window = FindWindow(NULL, L"OFGal_Engine");
+        float scaleX = 1920.0f / 2560.0f;
+        float scaleY = 1080.0f / 1600.0f;
+        if (MAX_Window) {
+            RECT rect;
+            if (GetWindowRect(MAX_Window, &rect)) {
+                int width = rect.right - rect.left;
+                int height = rect.bottom - rect.top;
+                scaleX = (float)width / 2560.0f;
+                scaleY = (float)height / 1600.0f;
+            }
+        }
+        SetWindowPos(hwndConsole, nullptr, 0, 1010.0f*scaleY, 350.0f*scaleX, 470.0f*scaleY, SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
     if (m_hConsoleOut == INVALID_HANDLE_VALUE) return;

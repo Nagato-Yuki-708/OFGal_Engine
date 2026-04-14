@@ -27,58 +27,107 @@ FolderViewer::FolderViewer()
     , m_hEventFolderChanged(nullptr)
     , m_hEventExit(nullptr)
     , m_running(false)
+    , m_selectedIndex(-1)
 {
-    screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    RECT rcWork;
-    if (SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0)) {
-        workAreaHeight = rcWork.bottom - rcWork.top;
-    }
-    else {
-        workAreaHeight = GetSystemMetrics(SM_CYSCREEN); // 降级方案
-    }
+    SetConsoleTitleW(L"OFGal_Engine/FolderViewer");
+
+    // 启用虚拟终端模式
+    EnableVirtualTerminal();
 
     // === 调整当前控制台窗口的位置和大小 ===
-    HWND hConsoleWnd = GetConsoleWindow();
-    if (hConsoleWnd) {
-        int windowX = double(double(screenWidth) * 0.1374);
-        int windowY = double(double(workAreaHeight) * 0.7);
-        int windowWidth = double(double(screenWidth) * 0.6613);
-        int windowHeight = double(workAreaHeight) - double(double(workAreaHeight) * 0.7);
-
-        SetWindowPos(hConsoleWnd, nullptr,
-            windowX, windowY,
-            windowWidth, windowHeight,
-            SWP_NOZORDER | SWP_NOACTIVATE);
+    HWND hwndConsole = GetConsoleWindow();
+    if (hwndConsole) {
+        HWND MAX_Window = FindWindow(NULL, L"OFGal_Engine");
+        float scaleX = 1920.0f / 2560.0f;
+        float scaleY = 1080.0f / 1600.0f;
+        if (MAX_Window) {
+            RECT rect;
+            if (GetWindowRect(MAX_Window, &rect)) {
+                int width = rect.right - rect.left;
+                int height = rect.bottom - rect.top;
+                scaleX = (float)width / 2560.0f;
+                scaleY = (float)height / 1600.0f;
+            }
+        }
+        SetWindowPos(hwndConsole, nullptr, 350.0f * scaleX, 1010.0f * scaleY, 1690.0f * scaleX, 470.0f * scaleY, SWP_NOZORDER | SWP_NOACTIVATE);
     }
     m_inputSystem = std::make_unique<InputSystem>();
     m_inputCollector = std::make_unique<InputCollector>(m_inputSystem.get());
 
     // 注册需要的按键绑定
-    // 单键：Delete（边缘触发，只关心按下瞬间）
+    // 单键：Delete（边缘触发）
     m_inputCollector->AddBinding({ VK_DELETE, Modifier::None, KeyCode::Delete, true });
-
+    // Enter
     m_inputCollector->AddBinding({ VK_RETURN, Modifier::None, KeyCode::Enter, true });
-    //m_inputCollector->AddBinding({ VK_NUMPAD_ENTER, Modifier::None, KeyCode::Enter, true });
-
-    // 组合键：Ctrl+N（边缘触发）
+    // 组合键：Ctrl+N
     m_inputCollector->AddBinding({ 'N', Modifier::Ctrl, KeyCode::CtrlN, true });
-
-    // 鼠标右键（边缘或状态均可，这里用状态变化以支持按下/释放事件）
+    // 鼠标右键（状态变化）
     m_inputCollector->AddBinding({ VK_RBUTTON, Modifier::None, KeyCode::MouseRight, false });
 
-    // 其他可选绑定，可根据需要添加，例如鼠标左键、中键、W 等
-    m_inputCollector->AddBinding({ 'W', Modifier::None, KeyCode::W, false });
-    // 若还需 Ctrl+S，可继续添加
+    // 导航键（边缘触发）
+    m_inputCollector->AddBinding({ 'W', Modifier::None, KeyCode::W, true });
+    m_inputCollector->AddBinding({ 'S', Modifier::None, KeyCode::S, true });
+    m_inputCollector->AddBinding({ VK_UP, Modifier::None, KeyCode::Up, true });
+    m_inputCollector->AddBinding({ VK_DOWN, Modifier::None, KeyCode::Down, true });
+
+    // Ctrl+S（保留）
     m_inputCollector->AddBinding({ 'S', Modifier::Ctrl, KeyCode::CtrlS, true });
 
+    // 动作映射
     m_actionMap[KeyCode::MouseRight] = [this]() { OnRightClick(); };
     m_actionMap[KeyCode::CtrlN] = [this]() { OnCtrlN(); };
     m_actionMap[KeyCode::Delete] = [this]() { OnDelete(); };
     m_actionMap[KeyCode::Enter] = [this]() { OnEnter(); };
+    m_actionMap[KeyCode::W] = [this]() { OnMoveUp(); };
+    m_actionMap[KeyCode::Up] = [this]() { OnMoveUp(); };
+    m_actionMap[KeyCode::S] = [this]() { OnMoveDown(); };
+    m_actionMap[KeyCode::Down] = [this]() { OnMoveDown(); };
 }
 
 FolderViewer::~FolderViewer() {
     CloseIPCResources();
+}
+
+void FolderViewer::EnableVirtualTerminal() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+
+    DWORD dwMode = 0;
+    if (!GetConsoleMode(hOut, &dwMode)) return;
+
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    if (SetConsoleMode(hOut, dwMode)) {
+        m_virtualTerminalEnabled = true;
+    }
+    else {
+        // 启用失败，后续使用传统 API 高亮
+        m_virtualTerminalEnabled = false;
+    }
+}
+
+void FolderViewer::SetConsoleHighlight(bool enable) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+
+    if (m_virtualTerminalEnabled) {
+        // VT 模式：直接输出转义序列
+        std::cout << (enable ? "\033[7m" : "\033[0m");
+    }
+    else {
+        // 传统模式：使用 Console API
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        if (GetConsoleScreenBufferInfo(hOut, &csbi)) {
+            if (enable) {
+                // 反色：交换前景色和背景色
+                WORD wHighlight = (csbi.wAttributes & 0xF0) >> 4 | (csbi.wAttributes & 0x0F) << 4;
+                SetConsoleTextAttribute(hOut, wHighlight);
+            }
+            else {
+                // 恢复原始属性
+                SetConsoleTextAttribute(hOut, csbi.wAttributes);
+            }
+        }
+    }
 }
 
 bool FolderViewer::OpenIPCResources() {
@@ -170,10 +219,12 @@ void FolderViewer::RefreshDisplay(const std::string& folderPath) {
     std::error_code ec;
     if (!fs::exists(folderPath, ec) || !fs::is_directory(folderPath, ec)) {
         std::cout << "[Invalid directory]" << std::endl;
+        m_displayItems.clear();
+        m_selectedIndex = -1;
         return;
     }
 
-    // 列出目录内容（仅直接子项）
+    // 收集目录项
     std::vector<std::string> folders;
     std::vector<std::string> files;
 
@@ -187,21 +238,85 @@ void FolderViewer::RefreshDisplay(const std::string& folderPath) {
         }
     }
 
-    // 排序
     std::sort(folders.begin(), folders.end());
     std::sort(files.begin(), files.end());
 
-    // 输出
-    std::cout << "[Folders]" << std::endl;
+    // 构建显示条目列表
+    m_displayItems.clear();
     for (const auto& name : folders) {
-        std::cout << "  " << name << "/" << std::endl;
+        DisplayItem item;
+        item.name = name;
+        item.fullPath = folderPath + "\\" + name;
+        item.isDirectory = true;
+        m_displayItems.push_back(item);
     }
-    std::cout << "[Files]" << std::endl;
     for (const auto& name : files) {
-        std::cout << "  " << name << std::endl;
+        DisplayItem item;
+        item.name = name;
+        item.fullPath = folderPath + "\\" + name;
+        item.isDirectory = false;
+        m_displayItems.push_back(item);
     }
+
+    // 调整选中索引
+    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_displayItems.size())) {
+        // 保留原有索引
+    }
+    else {
+        m_selectedIndex = m_displayItems.empty() ? -1 : 0;
+    }
+
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    int selectedLineY = -1;
+
+    std::cout << "[Folders / Files]" << std::endl;
+    for (size_t i = 0; i < m_displayItems.size(); ++i) {
+        const auto& item = m_displayItems[i];
+        bool selected = (static_cast<int>(i) == m_selectedIndex);
+
+        if (selected && hOut != INVALID_HANDLE_VALUE) {
+            CONSOLE_SCREEN_BUFFER_INFO csbi;
+            if (GetConsoleScreenBufferInfo(hOut, &csbi)) {
+                selectedLineY = csbi.dwCursorPosition.Y;
+            }
+        }
+
+        SetConsoleHighlight(selected);
+
+        std::cout << "  " << item.name;
+        if (item.isDirectory) std::cout << "/";
+        std::cout << std::endl;
+
+        SetConsoleHighlight(false);
+    }
+
     std::cout << "----------------------------------------" << std::endl;
-    std::cout << "Right Click / Ctrl+N / Delete to trigger actions." << std::endl;
+    std::cout << "W/Up / S/Down: Navigate | Enter: Open folder" << std::endl;
+    std::cout << "Right Click / Ctrl+N / Delete: Action on selected item" << std::endl;
+
+    
+}
+
+void FolderViewer::MoveSelection(int delta) {
+    if (m_displayItems.empty()) return;
+
+    int newIndex = m_selectedIndex + delta;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= static_cast<int>(m_displayItems.size()))
+        newIndex = static_cast<int>(m_displayItems.size()) - 1;
+
+    if (newIndex != m_selectedIndex) {
+        m_selectedIndex = newIndex;
+        RefreshDisplay(m_currentFolderPath); // 重绘以更新高亮
+    }
+}
+
+void FolderViewer::OnMoveUp() {
+    MoveSelection(-1);
+}
+
+void FolderViewer::OnMoveDown() {
+    MoveSelection(1);
 }
 
 void FolderViewer::OnUpdatePath() {
@@ -234,39 +349,58 @@ void FolderViewer::NotifyParentFolderChanged(const std::string& newPath) {
     SetEvent(m_hEventFolderChanged);
 }
 
-// 占位回调函数，末尾调用 NotifyParentFolderChanged
 void FolderViewer::OnRightClick() {
-    // TODO: 实现右键功能
-    std::cout << "[Right Click] triggered." << std::endl;
+    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_displayItems.size())) {
+        std::cout << "[Right Click] No item selected." << std::endl;
+        return;
+    }
+    const auto& item = m_displayItems[m_selectedIndex];
+    std::cout << "[Right Click] Selected: " << item.fullPath << std::endl;
 
-    // 示例：通知父进程路径改为当前文件夹（你可替换为实际需要的内容）
-    NotifyParentFolderChanged(m_currentFolderPath);
+    // TODO: 实现右键功能（留白）
+    // NotifyParentFolderChanged(item.fullPath); // 根据需要调用
 }
 
 void FolderViewer::OnCtrlN() {
-    // TODO: 实现 Ctrl+N 功能
-    std::cout << "[Ctrl+N] triggered." << std::endl;
+    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_displayItems.size())) {
+        std::cout << "[Ctrl+N] No item selected." << std::endl;
+        return;
+    }
+    const auto& item = m_displayItems[m_selectedIndex];
+    std::cout << "[Ctrl+N] Selected: " << item.fullPath << std::endl;
 
-    // 示例：通知父进程路径改为当前文件夹
-    NotifyParentFolderChanged(m_currentFolderPath);
+    // TODO: 实现 Ctrl+N 功能（留白）
 }
 
 void FolderViewer::OnDelete() {
-    // TODO: 实现 Delete 功能
-    std::cout << "[Delete] triggered." << std::endl;
+    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_displayItems.size())) {
+        std::cout << "[Delete] No item selected." << std::endl;
+        return;
+    }
+    const auto& item = m_displayItems[m_selectedIndex];
+    std::cout << "[Delete] Selected: " << item.fullPath << std::endl;
 
-    // 示例：通知父进程路径改为当前文件夹
-    NotifyParentFolderChanged(m_currentFolderPath);
+    // TODO: 实现 Delete 功能（留白）
 }
 
 void FolderViewer::OnEnter() {
-    // TODO: 实现按下 Enter 后的具体逻辑
-    std::cout << "[Enter] triggered on folder: " << m_currentFolderPath << std::endl;
+    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_displayItems.size())) {
+        std::cout << "[Enter] No item selected." << std::endl;
+        return;
+    }
 
-    // 示例：进入当前选中的文件夹（需结合您自己的选中逻辑）
-    // 这里仅为示意，实际可能需要读取用户选中的条目
-    // NotifyParentFolderChanged(m_currentFolderPath + "\\selected_subfolder");
-    NotifyParentFolderChanged(m_currentFolderPath);
+    const auto& item = m_displayItems[m_selectedIndex];
+    if (item.isDirectory) {
+        // 进入文件夹
+        m_currentFolderPath = item.fullPath;
+        RefreshDisplay(m_currentFolderPath);
+        NotifyParentFolderChanged(m_currentFolderPath);
+        std::cout << "[Enter] Entered folder: " << item.fullPath << std::endl;
+    }
+    else {
+        std::cout << "[Enter] Selected file (cannot enter): " << item.fullPath << std::endl;
+        // 可扩展：对文件执行默认操作
+    }
 }
 
 void FolderViewer::MainLoop() {

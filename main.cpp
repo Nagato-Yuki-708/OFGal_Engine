@@ -23,9 +23,9 @@ int main() {
 	_EventBus* pEventBus = &_EventBus::getInstance();
 	FileSystem* pFileSystem = &FileSystem::getInstance();
 	SoundSystem* pSoundSystem = &SoundSystem::getInstance();
+	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
     WindowsSystem* pWindowsSystem = &WindowsSystem::getInstance();
 	GameVM* pGameVM = &GameVM::getInstance();
-	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
 
 	InputSystem inputSystem;
 	InputCollector collector(&inputSystem);

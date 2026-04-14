@@ -88,6 +88,8 @@ bool initializeConsoleDrawer() {
 		return false;
 	}
 
+	SetConsoleTitleW(L"OFGal_Engine");
+
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	if (!GetConsoleScreenBufferInfo(g_hConsole, &csbi)) {
 		OutputDebugStringA("获取控制台信息失败");

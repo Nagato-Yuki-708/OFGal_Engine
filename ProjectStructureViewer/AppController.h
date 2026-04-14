@@ -9,8 +9,6 @@
 
 class AppController {
 public:
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int workAreaHeight = 0;
 
     AppController();
     ~AppController() = default;
