@@ -5,22 +5,19 @@
 #include <vector>
 
 WindowsSystem::WindowsSystem() {
-    // 初始化项目目录（测试用）
-    std::string temppath = "E:\\Projects\\C++Projects\\OFGal_Engine\\docs";
-    size_t len = temppath.size() + 1;
-    currentProjectDirectory = new char[len];
-    strcpy_s(currentProjectDirectory, len, temppath.c_str());
-
+    /*
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
+    */
 }
 WindowsSystem::WindowsSystem(std::string path) {
     size_t len = path.size() + 1;
     currentProjectDirectory = new char[len];
     strcpy_s(currentProjectDirectory, len, path.c_str());
-
+    /*
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
+    */
 }
 
 WindowsSystem::~WindowsSystem() {
