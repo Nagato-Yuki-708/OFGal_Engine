@@ -2,6 +2,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <windows.h>
 #include <map>
 #include <memory>
 
@@ -24,4 +25,9 @@ struct TreeDisplayInfo {
 struct SelectedFolderInfo {
     std::string absolutePath;
     int lineNumber;
+};
+
+struct YesNoDialogData {
+    WCHAR message[300];   // 使用 WCHAR (UTF-16)
+    BOOL  result;
 };

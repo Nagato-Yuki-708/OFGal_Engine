@@ -1,7 +1,7 @@
-#include <iostream>
+// Copyright 2026 MrSeagull. All Rights Reserved.
+#include "FolderViewer.h"
 
 int main() {
-
-
-	return 0;
+    FolderViewer app;
+    return app.Run();
 }
