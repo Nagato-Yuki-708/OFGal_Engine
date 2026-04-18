@@ -89,8 +89,5 @@ int main() {
 	running = false;
 	inputThread.join();  // 等待子线程结束
 
-	OutputDebugStringA("=== main END ===\n");
-	//std::this_thread::sleep_for(std::chrono::seconds(5));
-
 	return 0;
 }
