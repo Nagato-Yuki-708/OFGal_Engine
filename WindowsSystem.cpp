@@ -32,6 +32,9 @@ WindowsSystem::~WindowsSystem() {
     for (const auto& key : keys) {
         TerminateChildProcess(key, 1000);
     }
+    if (m_hLevelTreeListPathUpdateEvent) {
+        CloseHandle(m_hLevelTreeListPathUpdateEvent);
+    }
     delete[] currentProjectDirectory;
 }
 
@@ -413,6 +416,11 @@ bool WindowsSystem::OpenLevelTreeList() {
         return false;
     }
 
+    std::string levelTreeEventName = "Global\\OFGal_Engine_LevelTreeList_PathUpdate";
+    m_hLevelTreeListPathUpdateEvent = CreateEventA(NULL, TRUE, FALSE, levelTreeEventName.c_str());
+    if (!m_hLevelTreeListPathUpdateEvent)
+        OutputDebugStringA(("CreateEvent failed for LevelTreeList: " + levelTreeEventName).c_str());
+
     OutputDebugStringA("[WindowsSystem] LevelTreeList.exe launched successfully\n");
     return true;
 }
@@ -444,6 +452,9 @@ void WindowsSystem::Run() {
         if (result == WAIT_OBJECT_0) {
             targetPath = &m_lastOpenedLevelPath;
             blockName = "OpenLevelPath";
+            if (m_hLevelTreeListPathUpdateEvent) {
+                SetEvent(m_hLevelTreeListPathUpdateEvent);
+            }
         }
         else if (result == WAIT_OBJECT_0 + 1) {
             targetPath = &m_lastOpenedBlueprintPath;

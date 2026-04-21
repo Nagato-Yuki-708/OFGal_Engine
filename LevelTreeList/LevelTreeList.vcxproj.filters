@@ -13,10 +13,51 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\input">
+      <UniqueIdentifier>{2e65c94d-ee2f-4400-88eb-aedcb8007d5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\input">
+      <UniqueIdentifier>{c8a553df-5efd-40d7-8487-8f41711831e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\readJson">
+      <UniqueIdentifier>{ad3f1dff-624a-490e-b0b5-8998b8a20741}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\readJson">
+      <UniqueIdentifier>{8998e67a-c4f8-4f0b-9581-86f356d306b6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InputSystem.cpp">
+      <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputCollector.cpp">
+      <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="Json_LevelData_ReadWrite.cpp">
+      <Filter>Source Files\readJson</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelTreeList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SharedTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputCollector.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="Json_LevelData_ReadWrite.h">
+      <Filter>Header Files\readJson</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelTreeList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

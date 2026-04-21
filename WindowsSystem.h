@@ -82,4 +82,5 @@ private:
     std::wstring m_lastOpenedBlueprintPath;
     std::wstring m_lastOpenedTextPath;
 
+    HANDLE m_hLevelTreeListPathUpdateEvent;
 };
