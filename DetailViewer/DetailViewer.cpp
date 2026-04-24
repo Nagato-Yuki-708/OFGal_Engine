@@ -8,8 +8,8 @@
 #include <iostream>  // [新增] 用于 std::cout
 
 // 共享内存大小定义（根据实际约定调整）
-static const DWORD PATH_SHARED_MEM_SIZE = 4096; // 假设路径共享内存 4096 字节
-static const DWORD OBJECT_SHARED_MEM_SIZE = 256;  // 假设对象名共享内存 256 字节
+static const DWORD PATH_SHARED_MEM_SIZE = 1024;
+static const DWORD OBJECT_SHARED_MEM_SIZE = 1024;
 
 DetailViewer::DetailViewer()
     : m_hEventPathUpdate(nullptr)
@@ -56,10 +56,31 @@ DetailViewer::~DetailViewer()
     if (m_hEventObjectChanged) CloseHandle(m_hEventObjectChanged);
 }
 
-// [新增] ANSI 清屏实现
 void DetailViewer::ClearScreen() {
     // \x1b[2J 清除整个屏幕，\x1b[H 将光标移到左上角
     std::cout << "\x1b[2J\x1b[H" << std::flush;
+}
+
+ObjectData* DetailViewer::FindObjectByName(const std::string& name) const {
+    if (!m_currentLevel)
+        return nullptr;
+
+    // 递归 lambda
+    std::function<ObjectData* (const std::map<std::string, ObjectData*>&)> search =
+        [&](const std::map<std::string, ObjectData*>& container) -> ObjectData* {
+        for (const auto& [objName, obj] : container) {
+            if (objName == name)
+                return obj;
+            if (!obj->objects.empty()) {
+                ObjectData* found = search(obj->objects);
+                if (found)
+                    return found;
+            }
+        }
+        return nullptr;
+        };
+
+    return search(m_currentLevel->objects);
 }
 
 void DetailViewer::ConfigureConsole() {
@@ -138,13 +159,16 @@ void DetailViewer::Run()
                 std::string utf8Path(len - 1, '\0');
                 WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), -1, &utf8Path[0], len, nullptr, nullptr);
 
-                // 从 JSON 读取关卡
-                LevelData newLevel = ReadLevelData(utf8Path);
-                m_currentLevel = std::make_unique<LevelData>(std::move(newLevel));
-
-                // 重置选中状态（场景重新载入，不选中具体对象）
-                m_currentObject = nullptr;
-                m_selectedComponent = { ComponentType::None, nullptr };
+                try {
+                    LevelData newLevel = ReadLevelData(utf8Path);
+                    m_currentLevel = std::make_unique<LevelData>(std::move(newLevel));
+                    m_currentObject = nullptr;
+                    m_selectedComponent = { ComponentType::None, nullptr };
+                    OutputDebugStringA("[DetailViewer] PathUpdate: level reloaded.\n");
+                }
+                catch (const std::exception& e) {
+                    OutputDebugStringA(("[DetailViewer] ERROR reloading level: " + std::string(e.what()) + "\n").c_str());
+                }
 
                 OutputDebugStringA("[DetailViewer] PathUpdate: level reloaded.\n");
             }
@@ -167,14 +191,17 @@ void DetailViewer::Run()
             WaitForSingleObject(m_hEventObjectChanged, 0) == WAIT_OBJECT_0)
         {
             if (m_pViewObject && m_currentLevel) {
-                const char* objName = static_cast<const char*>(m_pViewObject);
-                std::string name(objName);
+                const wchar_t* wObjName = static_cast<const wchar_t*>(m_pViewObject);
+                std::wstring wsName(wObjName);
 
-                auto it = m_currentLevel->objects.find(name);
-                if (it != m_currentLevel->objects.end()) {
-                    m_currentObject = it->second;
+                // 宽字符转 UTF-8
+                int len = WideCharToMultiByte(CP_UTF8, 0, wsName.c_str(), -1, nullptr, 0, nullptr, nullptr);
+                std::string name(len - 1, '\0');
+                WideCharToMultiByte(CP_UTF8, 0, wsName.c_str(), -1, &name[0], len, nullptr, nullptr);
 
-                    // 选取第一个存在的组件
+                ObjectData* foundObj = FindObjectByName(name);
+                if (foundObj) {
+                    m_currentObject = foundObj;
                     m_selectedComponent = { ComponentType::None, nullptr };
                     if (m_currentObject->Transform.has_value()) {
                         m_selectedComponent.type = ComponentType::Transform;
@@ -206,7 +233,6 @@ void DetailViewer::Run()
                 }
             }
 
-            // [新增] 清屏并打印帮助信息和当前对象的组件数量
             ClearScreen();
             std::cout << "W/up : last Component     S/down : next Component     J/Add Component     K/Delete Component     F/Edit  Component\n";
 

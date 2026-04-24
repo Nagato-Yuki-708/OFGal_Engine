@@ -529,15 +529,29 @@ bool LevelTreeList::IsNameUsedInObject(const ObjectData* obj, const std::string&
     return false;
 }
 
-void LevelTreeList::SaveCurrentLevel() {
-    if (!m_currentLevel || m_currentLevelPath.empty()) return;
+bool LevelTreeList::SaveCurrentLevelAtomic() {
+    if (!m_currentLevel || m_currentLevelPath.empty()) return false;
+
+    std::string tmpPath = m_currentLevelPath + ".tmp";
     try {
-        WriteLevelData(m_currentLevelPath, *m_currentLevel);
-        OutputDebugStringA(("[LevelTreeList] Saved to " + m_currentLevelPath + "\n").c_str());
+        // 1. 写入临时文件
+        if (!WriteLevelData(tmpPath, *m_currentLevel)) {
+            OutputDebugStringA("[LevelTreeList] WriteLevelData to temp failed.\n");
+            return false;
+        }
+
+        // 2. 原子替换正式文件
+        std::filesystem::rename(tmpPath, m_currentLevelPath);
+        OutputDebugStringA(("[LevelTreeList] Atomically saved to " + m_currentLevelPath + "\n").c_str());
+        return true;
     }
     catch (const std::exception& e) {
-        std::string err = "[LevelTreeList] Failed to save level: " + std::string(e.what()) + "\n";
+        std::string err = "[LevelTreeList] Atomic save failed: " + std::string(e.what()) + "\n";
         OutputDebugStringA(err.c_str());
+        // 清理可能残留的临时文件
+        std::error_code ec;
+        std::filesystem::remove(tmpPath, ec);
+        return false;
     }
 }
 
@@ -719,7 +733,22 @@ void LevelTreeList::AddObjectInteractive() {
 
     m_inInteractiveMode = false;
     RenderTree();
-    SaveCurrentLevel();
+    if(SaveCurrentLevelAtomic()) {
+        // 复制路径到共享内存并通知 DetailViewer
+        if (m_pPathSharedView) {
+            wcsncpy_s(
+                static_cast<WCHAR*>(m_pPathSharedView),
+                SHARED_PATH_BUFFER_SIZE / sizeof(WCHAR),
+                m_currentLevelPathW.c_str(),
+                m_currentLevelPathW.length());
+            // 确保末尾 0
+            static_cast<WCHAR*>(m_pPathSharedView)[m_currentLevelPathW.length()] = L'\0';
+        }
+        if (m_hPathUpdateEvent) {
+            SetEvent(m_hPathUpdateEvent);
+            OutputDebugStringW(L"[LevelTreeList] PathUpdate event signaled.\n");
+        }
+    }
 }
 
 void LevelTreeList::DeleteSelectedObject() {
@@ -758,7 +787,22 @@ void LevelTreeList::DeleteSelectedObject() {
         BuildDisplayList();
         if (m_selectedIndex >= static_cast<int>(m_displayNodes.size()))
             m_selectedIndex = static_cast<int>(m_displayNodes.size()) - 1;
-        SaveCurrentLevel();
+        if (SaveCurrentLevelAtomic()) {
+            // 复制路径到共享内存并通知 DetailViewer
+            if (m_pPathSharedView) {
+                wcsncpy_s(
+                    static_cast<WCHAR*>(m_pPathSharedView),
+                    SHARED_PATH_BUFFER_SIZE / sizeof(WCHAR),
+                    m_currentLevelPathW.c_str(),
+                    m_currentLevelPathW.length());
+                // 确保末尾 0
+                static_cast<WCHAR*>(m_pPathSharedView)[m_currentLevelPathW.length()] = L'\0';
+            }
+            if (m_hPathUpdateEvent) {
+                SetEvent(m_hPathUpdateEvent);
+                OutputDebugStringW(L"[LevelTreeList] PathUpdate event signaled.\n");
+            }
+        }
     }
 
     m_inInteractiveMode = false;

@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <filesystem>
 
 #include "SharedTypes.h"
 #include "InputSystem.h"
@@ -53,7 +54,7 @@ private:
     void AddObjectInteractive();
     void DeleteSelectedObject();
 
-    void SaveCurrentLevel();
+    bool SaveCurrentLevelAtomic();
     void RemoveObjectFromParent(ObjectData* obj);
     void ClearInputStream();
     bool AskComponent(const std::string& componentName);

@@ -59,4 +59,5 @@ private:
 
     // ---- 工具 ----
     void ClearScreen();
+    ObjectData* FindObjectByName(const std::string& name) const;
 };

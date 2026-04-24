@@ -147,7 +147,8 @@ void from_json(const json& j, ObjectData& v) {
 // ========== LevelData 序列化/反序列化（处理关系） ==========
 void to_json(json& j, const LevelData& v) {
 	json levelObj;
-	// 收集根对象（parent == nullptr）
+
+	// 收集根对象列表（不变）
 	std::vector<std::string> rootObjects;
 	for (const auto& [name, obj] : v.objects) {
 		if (obj->parent == nullptr) {
@@ -156,103 +157,106 @@ void to_json(json& j, const LevelData& v) {
 	}
 	if (!rootObjects.empty()) levelObj["SubObjects"] = rootObjects;
 
-	// 输出每个对象的完整信息
-	for (const auto& [name, obj] : v.objects) {
-		json objJson = *obj;  // 先获取组件部分
-		// 添加 ParObject
-		if (obj->parent != nullptr) {
-			objJson["ParObject"] = obj->parent->name;
-		}
-		// 添加 SubObjects
-		if (!obj->objects.empty()) {
-			std::vector<std::string> subNames;
-			for (const auto& [subName, subObj] : obj->objects) {
-				subNames.push_back(subName);
+	// 递归辅助函数：将所有对象添加到 levelObj
+	std::function<void(const std::map<std::string, ObjectData*>&)> collect;
+	collect = [&](const std::map<std::string, ObjectData*>& children) {
+		for (const auto& [name, obj] : children) {
+			json objJson = *obj;               // 获取组件部分
+			if (obj->parent != nullptr) {
+				objJson["ParObject"] = obj->parent->name;
 			}
-			objJson["SubObjects"] = subNames;
+			if (!obj->objects.empty()) {
+				std::vector<std::string> subNames;
+				for (const auto& [subName, subObj] : obj->objects) {
+					subNames.push_back(subName);
+				}
+				objJson["SubObjects"] = subNames;
+			}
+			levelObj[name] = objJson;
+
+			// 递归处理子对象
+			if (!obj->objects.empty()) {
+				collect(obj->objects);
+			}
 		}
-		levelObj[name] = objJson;
-	}
+		};
+	collect(v.objects);   // 从根对象开始递归
+
 	j = json{ {v.name, levelObj} };
 }
 
 void from_json(const json& j, LevelData& v) {
-	if (j.size() != 1) throw std::runtime_error("Level JSON must have exactly one top-level key (level name)");
+	if (j.size() != 1)
+		throw std::runtime_error("Level JSON must have exactly one top-level key (level name)");
 	auto it = j.begin();
 	v.name = it.key();
 	const json& levelObj = it.value();
 
-	// 存储临时关系信息
-	std::unordered_map<std::string, std::string> parentNames;
-	std::unordered_map<std::string, std::vector<std::string>> childrenNames;
+	// 临时存放所有对象（std::unique_ptr 安全）
+	std::unordered_map<std::string, std::unique_ptr<ObjectData>> allObjects;
+	std::unordered_map<std::string, std::string> parentNames;          // childName -> parentName
+	std::unordered_map<std::string, std::vector<std::string>> childrenNames; // parentName -> childrenNames
 
-	// 第一步：创建所有对象并填充组件，记录关系字符串
+	// 第一步：创建所有对象，填充组件，记录关系字符串
 	for (auto& [objName, objJson] : levelObj.items()) {
-		if (objName == "SubObjects") continue;  // 跳过顶层子对象列表
+		if (objName == "SubObjects") continue;
 		auto obj = std::make_unique<ObjectData>();
 		obj->name = objName;
-		objJson.get_to(*obj);  // 填充组件（忽略关系字段）
-		// 记录 ParObject
+		objJson.get_to(*obj);      // 填充组件
 		if (objJson.contains("ParObject")) {
 			parentNames[objName] = objJson["ParObject"].get<std::string>();
 		}
-		// 记录 SubObjects
 		if (objJson.contains("SubObjects")) {
 			childrenNames[objName] = objJson["SubObjects"].get<std::vector<std::string>>();
 		}
-		v.objects[objName] = obj.release();  // 转移所有权
+		allObjects[objName] = std::move(obj);
 	}
 
-	// 第二步：建立父子关系（根据 parentNames 和 childrenNames）
-	for (auto& [objName, obj] : v.objects) {
-		// 设置 parent 指针
-		auto itParent = parentNames.find(objName);
-		if (itParent != parentNames.end()) {
-			const std::string& parentName = itParent->second;
-			if (parentName == v.name) {
-				obj->parent = nullptr;  // 父对象为场景
-			}
-			else {
-				auto parentIt = v.objects.find(parentName);
-				if (parentIt != v.objects.end()) {
-					obj->parent = parentIt->second;
-				}
-				else {
-					throw std::runtime_error("Parent object not found: " + parentName);
-				}
-			}
-		}
-		else {
-			obj->parent = nullptr;  // 默认父对象为场景，稍后可能被场景 SubObjects 覆盖
-		}
+	// 第二步：递归构建树，转移所有权
+	std::function<ObjectData* (const std::string&)> buildTree =
+		[&](const std::string& objName) -> ObjectData* {
+		auto it = allObjects.find(objName);
+		if (it == allObjects.end())
+			throw std::runtime_error("Object not found: " + objName);
 
-		// 设置子对象映射
-		auto itChildren = childrenNames.find(objName);
-		if (itChildren != childrenNames.end()) {
-			for (const std::string& subName : itChildren->second) {
-				auto subIt = v.objects.find(subName);
-				if (subIt != v.objects.end()) {
-					obj->objects[subName] = subIt->second;
-				}
-				else {
-					throw std::runtime_error("Child object not found: " + subName);
-				}
+		ObjectData* ptr = it->second.release();   // 所有权取出
+		allObjects.erase(it);
+
+		// 处理该节点的子对象
+		auto childIt = childrenNames.find(objName);
+		if (childIt != childrenNames.end()) {
+			for (const auto& childName : childIt->second) {
+				ObjectData* childPtr = buildTree(childName);
+				childPtr->parent = ptr;
+				ptr->objects[childName] = childPtr;
 			}
 		}
-	}
+		return ptr;
+		};
 
-	// 第三步：处理场景的直接子对象（顶层 SubObjects）
+	// 第三步：处理根对象（从顶层 SubObjects 列表获取）
+	std::vector<std::string> rootNames;
 	if (levelObj.contains("SubObjects")) {
-		auto rootNames = levelObj["SubObjects"].get<std::vector<std::string>>();
-		for (const std::string& rootName : rootNames) {
-			auto objIt = v.objects.find(rootName);
-			if (objIt != v.objects.end()) {
-				objIt->second->parent = nullptr;  // 确保根对象父指针为 nullptr
-			}
-			else {
-				throw std::runtime_error("Root object not found: " + rootName);
-			}
+		rootNames = levelObj["SubObjects"].get<std::vector<std::string>>();
+	}
+	else {
+		// Fallback：所有没有父对象的都视为根
+		for (const auto& [name, _] : allObjects) {
+			if (parentNames.find(name) == parentNames.end())
+				rootNames.push_back(name);
 		}
+	}
+
+	// 构建根对象并放入 v.objects（所有权转移）
+	for (const auto& rootName : rootNames) {
+		ObjectData* rootPtr = buildTree(rootName);
+		rootPtr->parent = nullptr;
+		v.objects[rootName] = rootPtr;
+	}
+
+	// 安全检查：不应该有剩余对象
+	if (!allObjects.empty()) {
+		throw std::runtime_error("Some objects are not referenced in the tree.");
 	}
 }
 
