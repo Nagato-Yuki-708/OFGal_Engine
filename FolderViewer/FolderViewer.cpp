@@ -72,8 +72,8 @@ FolderViewer::FolderViewer()
 {
     SetConsoleTitleW(L"OFGal_Engine/FolderViewer");
 
-    // 启用虚拟终端模式
     EnableVirtualTerminal();
+    DisableQuickEditMode();
 
     // === 调整当前控制台窗口的位置和大小 ===
     HWND hwndConsole = GetConsoleWindow();
@@ -146,6 +146,18 @@ void FolderViewer::EnableVirtualTerminal() {
     else {
         // 启用失败，后续使用传统 API 高亮
         m_virtualTerminalEnabled = false;
+    }
+}
+
+void FolderViewer::DisableQuickEditMode() {
+    HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
+    if (hIn != INVALID_HANDLE_VALUE) {
+        DWORD dwMode = 0;
+        if (GetConsoleMode(hIn, &dwMode)) {
+            dwMode &= ~(ENABLE_QUICK_EDIT_MODE | ENABLE_INSERT_MODE);
+            dwMode |= ENABLE_EXTENDED_FLAGS;
+            SetConsoleMode(hIn, dwMode);
+        }
     }
 }
 

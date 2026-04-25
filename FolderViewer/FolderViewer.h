@@ -105,5 +105,6 @@ private:
 
     bool m_virtualTerminalEnabled;
     void EnableVirtualTerminal();
+    void DisableQuickEditMode();
     void SetConsoleHighlight(bool enable);
 };

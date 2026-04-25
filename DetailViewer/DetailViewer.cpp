@@ -5,7 +5,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
-#include <iostream>  // [新增] 用于 std::cout
+#include <iostream>
 
 // 共享内存大小定义（根据实际约定调整）
 static const DWORD PATH_SHARED_MEM_SIZE = 1024;

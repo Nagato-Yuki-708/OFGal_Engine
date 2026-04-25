@@ -34,13 +34,13 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InputCollector.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\input</Filter>
     </ClCompile>
     <ClCompile Include="InputSystem.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\input</Filter>
     </ClCompile>
     <ClCompile Include="Json_LevelData_ReadWrite.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\readJson</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
