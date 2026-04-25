@@ -7,6 +7,7 @@
 #include "Json_LevelData_ReadWrite.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 // 组件类型枚举，用于标识当前选中的组件
 enum class ComponentType {
@@ -39,6 +40,7 @@ private:
     HANDLE m_hEventPathUpdate;
     HANDLE m_hEventDataChanged;
     HANDLE m_hEventObjectChanged;
+    HANDLE m_hEventRenderPreview;
 
     // ---- 共享内存句柄 ----
     HANDLE m_hMapPath;
@@ -48,16 +50,29 @@ private:
 
     // ---- 关卡数据 ----
     std::unique_ptr<LevelData> m_currentLevel;
+    std::string m_currentLevelPath;
     ObjectData* m_currentObject = nullptr;
     SelectedComponent          m_selectedComponent;
+
+    // 当前对象拥有的组件列表（按优先级顺序）
+    std::vector<ComponentType> m_existingComponents;
 
     // ---- 输入系统 ----
     InputSystem     m_inputSystem;
     InputCollector  m_inputCollector;
 
     bool m_bindingsAdded = false; // 确保按键绑定只添加一次
+    bool isEditing = false;       // 用于中断输入监听
 
     // ---- 工具 ----
     void ClearScreen();
     ObjectData* FindObjectByName(const std::string& name) const;
+    void UpdateExistingComponents();
+    void PrintObjectComponents();
+    void PrintHelpText();
+    void FlushInputBuffer();
+
+    // ---- 编辑功能 ----
+    void EditCurrentComponent();
+    bool ReadLineWithCancel(std::string& output);
 };
