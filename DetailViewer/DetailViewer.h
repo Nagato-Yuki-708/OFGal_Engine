@@ -64,6 +64,9 @@ private:
     bool m_bindingsAdded = false; // 确保按键绑定只添加一次
     bool isEditing = false;       // 用于中断输入监听
 
+    // ---- 子进程句柄 ----
+    HANDLE m_hLevelViewerProcess;
+
     // ---- 工具 ----
     void ClearScreen();
     ObjectData* FindObjectByName(const std::string& name) const;
@@ -71,8 +74,12 @@ private:
     void PrintObjectComponents();
     void PrintHelpText();
     void FlushInputBuffer();
+    int GetConsoleColumns();
 
     // ---- 编辑功能 ----
     void EditCurrentComponent();
     bool ReadLineWithCancel(std::string& output);
+
+    // ---- 路径 ----
+    std::wstring exePath_LevelViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\LevelViewer.exe";
 };

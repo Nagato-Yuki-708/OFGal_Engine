@@ -48,6 +48,16 @@ std::wstring AnsiToWide(const std::string& ansiStr) {
     return wstr;
 }
 
+int FolderViewer::GetConsoleColumns() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return 80; // 默认值
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(hOut, &csbi)) {
+        return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    }
+    return 80;
+}
+
 void FolderViewer::OnUpdatePath() {
     char buffer[SHARED_MEM_SIZE];
     memcpy(buffer, m_pSharedView, SHARED_MEM_SIZE);
@@ -67,6 +77,7 @@ FolderViewer::FolderViewer()
     , m_hSharedMem_OpenLevel(nullptr), m_pSharedView_OpenLevel(nullptr), m_hEvent_OpenLevel(nullptr)
     , m_hSharedMem_OpenBlueprint(nullptr), m_pSharedView_OpenBlueprint(nullptr), m_hEvent_OpenBlueprint(nullptr)
     , m_hSharedMem_OpenText(nullptr), m_pSharedView_OpenText(nullptr), m_hEvent_OpenText(nullptr)
+    , m_hEventLevelChanged(nullptr)   // 新增初始化
     , m_running(false)
     , m_selectedIndex(-1)
 {
@@ -249,6 +260,12 @@ bool FolderViewer::OpenIPCResources() {
         return false;
     }
 
+    m_hEventLevelChanged = CreateEventA(nullptr, FALSE, FALSE, "Global\\OFGal_Engine_FolderViewer_LevelChanged");
+    if (!m_hEventLevelChanged) {
+        std::cerr << "FolderViewer: CreateEvent(LevelChanged) failed, error=" << GetLastError() << std::endl;
+        // 非致命错误，不返回 false，根据需求可以继续运行
+    }
+
     return true;
 }
 
@@ -283,6 +300,12 @@ void FolderViewer::CloseIPCResources() {
     CloseBlockAndEvent(m_hSharedMem_OpenLevel, m_pSharedView_OpenLevel, m_hEvent_OpenLevel);
     CloseBlockAndEvent(m_hSharedMem_OpenBlueprint, m_pSharedView_OpenBlueprint, m_hEvent_OpenBlueprint);
     CloseBlockAndEvent(m_hSharedMem_OpenText, m_pSharedView_OpenText, m_hEvent_OpenText);
+
+    // 新增：关闭 LevelChanged 事件句柄
+    if (m_hEventLevelChanged) {
+        CloseHandle(m_hEventLevelChanged);
+        m_hEventLevelChanged = nullptr;
+    }
 }
 
 void FolderViewer::ClearScreen() {
@@ -306,7 +329,7 @@ void FolderViewer::ClearScreen() {
 void FolderViewer::RefreshDisplay(const std::string& folderPath) {
     ClearScreen();
     std::cout << "Current folder: " << folderPath << std::endl;
-    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::string(GetConsoleColumns(), '-') << std::endl;
 
     std::error_code ec;
     if (!fs::exists(folderPath, ec) || !fs::is_directory(folderPath, ec)) {
@@ -382,7 +405,7 @@ void FolderViewer::RefreshDisplay(const std::string& folderPath) {
         SetConsoleHighlight(false);
     }
 
-    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::string(GetConsoleColumns(), '-') << std::endl;
     std::cout << "W/Up / S/Down: Navigate | Enter: Open folder" << std::endl;
     std::cout << "Right Click / Ctrl+N / Delete: Action on selected item" << std::endl;
 
@@ -545,7 +568,7 @@ void FolderViewer::OnCtrlN() {
 
     // TODO: 弹出获取名称的对话框
     std::string newFolderName = "";
-    std::cout << "============================" << std::endl;
+    std::cout << std::string(GetConsoleColumns(), '=') << std::endl;
     std::cout << "Please enter the name of the new folder:" << std::endl;
     std::cin >> newFolderName;
     if (newFolderName.empty()) {
@@ -734,6 +757,10 @@ void FolderViewer::OnEnter() {
 
         if (ext == ".level") {
             NotifyOpen(m_pSharedView_OpenLevel, m_hEvent_OpenLevel, "Level");
+            if (m_hEventLevelChanged) {
+                SetEvent(m_hEventLevelChanged);
+                std::cout << "[Enter] Signalled LevelChanged event." << std::endl;
+            }
         }
         else if (ext == ".bp") {
             NotifyOpen(m_pSharedView_OpenBlueprint, m_hEvent_OpenBlueprint, "Blueprint");

@@ -43,6 +43,7 @@ DetailViewer::DetailViewer()
     , m_pViewPath(nullptr)
     , m_pViewObject(nullptr)
     , m_inputCollector(&m_inputSystem)
+    , m_hLevelViewerProcess(nullptr)  // 初始化子进程句柄
 {
     SetWindowSizeAndPosition();
     SetConsoleTitleW(L"OFGal_Engine/DetailViewer");
@@ -54,7 +55,7 @@ DetailViewer::DetailViewer()
 
     // 创建渲染预览通知事件
     m_hEventRenderPreview = CreateEventW(
-        NULL, TRUE, FALSE,
+        NULL, FALSE, FALSE,
         L"Global\\OFGal_Engine_DetailViewer_RenderPreviewFrame"
     );
     if (!m_hEventRenderPreview) {
@@ -90,6 +91,12 @@ DetailViewer::~DetailViewer()
     if (m_hEventDataChanged)  CloseHandle(m_hEventDataChanged);
     if (m_hEventObjectChanged) CloseHandle(m_hEventObjectChanged);
     if (m_hEventRenderPreview) CloseHandle(m_hEventRenderPreview);
+
+    // 关闭子进程句柄（不强制终止进程）
+    if (m_hLevelViewerProcess) {
+        CloseHandle(m_hLevelViewerProcess);
+        m_hLevelViewerProcess = nullptr;
+    }
 }
 
 void DetailViewer::ClearScreen() {
@@ -99,6 +106,16 @@ void DetailViewer::ClearScreen() {
 void DetailViewer::FlushInputBuffer() {
     HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
     FlushConsoleInputBuffer(hIn);
+}
+
+int DetailViewer::GetConsoleColumns() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return 80; // 默认值
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(hOut, &csbi)) {
+        return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    }
+    return 80;
 }
 
 ObjectData* DetailViewer::FindObjectByName(const std::string& name) const {
@@ -191,8 +208,10 @@ void DetailViewer::PrintObjectComponents() {
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(4);
 
-    const char* sep = "==============================";
-    const char* subSep = "------------------------------";
+    std::string sepStr(GetConsoleColumns(), '=');
+    const char* sep = sepStr.c_str();
+    std::string subStr(GetConsoleColumns(), '-');
+    const char* subSep = subStr.c_str();
 
     // 当前选中组件类型
     oss << WHITE << sep << "\n";
@@ -222,43 +241,43 @@ void DetailViewer::PrintObjectComponents() {
         void* ptr = getComponentPtr(type);
         if (type == ComponentType::Transform) {
             auto& comp = *static_cast<TransformComponent*>(ptr);
-            oss << YELLOW << "Location" << RESET << " : x = " << comp.Location.x
-                << " | y = " << comp.Location.y << " | z = " << comp.Location.z << "\n";
-            oss << YELLOW << "Rotation" << RESET << " : r = " << comp.Rotation.r << "\n";
-            oss << YELLOW << "Scale" << RESET << " : x = " << comp.Scale.x
-                << " | y = " << comp.Scale.y << "\n";
+            oss << YELLOW << "Location" << RESET << " :\n x = " << comp.Location.x
+                << "\n y = " << comp.Location.y << "\n z = " << comp.Location.z << "\n\n";
+            oss << YELLOW << "Rotation" << RESET << " :\n r = " << comp.Rotation.r << "\n\n";
+            oss << YELLOW << "Scale" << RESET << " :\n x = " << comp.Scale.x
+                << "\n y = " << comp.Scale.y << "\n";
         }
         else if (type == ComponentType::Picture) {
             auto& comp = *static_cast<PictureComponent*>(ptr);
-            oss << YELLOW << "Path" << RESET << " : " << comp.Path << "\n";
-            oss << YELLOW << "Location" << RESET << " : x = " << comp.Location.x
-                << " | y = " << comp.Location.y << " | z = " << comp.Location.z << "\n";
-            oss << YELLOW << "Rotation" << RESET << " : r = " << comp.Rotation.r << "\n";
-            oss << YELLOW << "Size" << RESET << " : x = " << comp.Size.x
-                << " | y = " << comp.Size.y << "\n";
+            oss << YELLOW << "Path" << RESET << " :\n " << comp.Path << "\n\n";
+            oss << YELLOW << "Location" << RESET << " :\n x = " << comp.Location.x
+                << "\n y = " << comp.Location.y << "\n z = " << comp.Location.z << "\n\n";
+            oss << YELLOW << "Rotation" << RESET << " :\n r = " << comp.Rotation.r << "\n\n";
+            oss << YELLOW << "Size" << RESET << " :\n x = " << comp.Size.x
+                << "\n y = " << comp.Size.y << "\n";
         }
         else if (type == ComponentType::Textblock) {
             auto& comp = *static_cast<TextblockComponent*>(ptr);
-            oss << YELLOW << "Location" << RESET << " : x = " << comp.Location.x
-                << " | y = " << comp.Location.y << "\n";
-            oss << YELLOW << "Size" << RESET << " : x = " << comp.Size.x
-                << " | y = " << comp.Size.y << "\n";
-            oss << YELLOW << "Text Component" << RESET << " : " << comp.Text.component << "\n";
-            oss << YELLOW << "Font Size" << RESET << " : " << comp.Text.Font_size << "\n";
-            oss << YELLOW << "ANSI Print" << RESET << " : " << (comp.Text.ANSI_Print ? "true" : "false") << "\n";
-            oss << YELLOW << "Scale" << RESET << " : x = " << comp.Scale.x
-                << " | y = " << comp.Scale.y << "\n";
+            oss << YELLOW << "Location" << RESET << " :\n x = " << comp.Location.x
+                << "\n y = " << comp.Location.y << "\n\n";
+            oss << YELLOW << "Size" << RESET << " :\n x = " << comp.Size.x
+                << "\n y = " << comp.Size.y << "\n\n";
+            oss << YELLOW << "Text Component" << RESET << " :\n " << comp.Text.component << "\n\n";
+            oss << YELLOW << "Font Size" << RESET << " :\n " << comp.Text.Font_size << "\n\n";
+            oss << YELLOW << "ANSI Print" << RESET << " :\n " << (comp.Text.ANSI_Print ? "true" : "false") << "\n\n";
+            oss << YELLOW << "Scale" << RESET << " :\n x = " << comp.Scale.x
+                << "\n y = " << comp.Scale.y << "\n";
         }
         else if (type == ComponentType::TriggerArea) {
             auto& comp = *static_cast<TriggerAreaComponent*>(ptr);
-            oss << YELLOW << "Location" << RESET << " : x = " << comp.Location.x
-                << " | y = " << comp.Location.y << "\n";
-            oss << YELLOW << "Size" << RESET << " : x = " << comp.Size.x
-                << " | y = " << comp.Size.y << "\n";
+            oss << YELLOW << "Location" << RESET << " :\n x = " << comp.Location.x
+                << "\n y = " << comp.Location.y << "\n\n";
+            oss << YELLOW << "Size" << RESET << " :\n x = " << comp.Size.x
+                << "\n y = " << comp.Size.y << "\n";
         }
         else if (type == ComponentType::Blueprint) {
             auto& comp = *static_cast<BlueprintComponent*>(ptr);
-            oss << YELLOW << "Path" << RESET << " : " << comp.Path << "\n";
+            oss << YELLOW << "Path" << RESET << " :\n " << comp.Path << "\n";
         }
 
         oss << WHITE << sep << RESET << "\n";
@@ -565,6 +584,28 @@ void DetailViewer::Run()
         m_inputCollector.AddBinding({ VK_DOWN,    Modifier::None, KeyCode::Down, true });
         m_inputCollector.AddBinding({ 'F',        Modifier::None, KeyCode::F,    true });
         m_bindingsAdded = true;
+    }
+
+    // === 初始化完毕后，启动 LevelViewer 子进程，并为其分配新控制台窗口 ===
+    {
+        STARTUPINFOW si = { sizeof(si) };
+        PROCESS_INFORMATION pi = {};
+        BOOL success = CreateProcessW(
+            exePath_LevelViewer.c_str(),   // 可执行文件路径
+            NULL,                          // 命令行（使用 exePath 本身）
+            NULL, NULL, FALSE,
+            CREATE_NEW_CONSOLE,            // 分配新控制台窗口
+            NULL, NULL,
+            &si, &pi
+        );
+        if (success) {
+            m_hLevelViewerProcess = pi.hProcess; // 保存进程句柄以便稍后关闭
+            CloseHandle(pi.hThread);             // 不需要线程句柄
+            OutputDebugStringA("[DetailViewer] LevelViewer launched successfully.\n");
+        }
+        else {
+            OutputDebugStringA("[DetailViewer] Failed to launch LevelViewer.\n");
+        }
     }
 
     while (true) {
