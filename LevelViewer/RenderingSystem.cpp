@@ -39,7 +39,7 @@ static void TraverseObject(
             const auto& pic = obj->Picture.value();
 
             // 1. 加载纹理
-            BMP_Data texture = _EventBus::getInstance().publish_ReadBMP(pic.Path.c_str());
+            BMP_Data texture = Read_A_BMP(pic.Path.c_str());
 
             // 2. 确定实际渲染尺寸（原始纹理尺寸 vs 指定视窗尺寸）
             int imgWidth = texture.width;
@@ -212,46 +212,99 @@ void RenderingSystem::Print_A_Frame(const Frame& frame) {
     drawFrame(frame);
 }
 
-// ----------------------------------------------------------------------
-// 将指定 Size2DInt 写入全局命名共享内存
-// 名称: "Global\\OFGal_Engine_oriCanvasSize"
-// 该函数创建（或打开已存在的）共享内存，并将数据写入，随后取消视图映射，
-// 但保留文件映射句柄，以确保共享内存在 RenderingSystem 生命周期内有效。
-// ----------------------------------------------------------------------
-void RenderingSystem::SetCanvasSizeSharedMemory(const Size2DInt& size) {
-    // 创建或打开全局共享内存
-    HANDLE hMapFile = CreateFileMapping(
-        INVALID_HANDLE_VALUE,         // 使用系统分页文件
-        NULL,                         // 默认安全属性
-        PAGE_READWRITE,               // 读写权限
-        0,                            // 高32位大小
-        sizeof(Size2DInt),            // 低32位大小（结构体大小）
-        L"Global\\OFGal_Engine_oriCanvasSize"); // 共享内存名称
-
-    if (hMapFile == NULL) {
-        // 创建/打开失败，直接返回（实际工程可加日志）
-        return;
+float RenderingSystem::CalculateThumbnailScaleFactor(Size2DInt& oriCanvasSize) const
+{
+    if (oriCanvasSize.x <= 0 || oriCanvasSize.y <= 0 ||
+        CanvasSize.x <= 0 || CanvasSize.y <= 0)
+    {
+        return 0.5f;
     }
 
-    // 映射视图到当前进程地址空间
-    Size2DInt* pBuf = static_cast<Size2DInt*>(
-        MapViewOfFile(hMapFile, FILE_MAP_WRITE, 0, 0, sizeof(Size2DInt))
-        );
+    float scaleX = static_cast<float>(CanvasSize.x) / static_cast<float>(oriCanvasSize.x);
+    float scaleY = static_cast<float>(CanvasSize.y) / static_cast<float>(oriCanvasSize.y);
 
-    if (pBuf == NULL) {
-        CloseHandle(hMapFile);
-        return;
+    float k = (scaleX < scaleY) ? scaleX : scaleY;
+    return k;
+}
+
+void RenderingSystem::ScaleForThumbnail(std::vector<RenderData>& renderObjects, Size2DInt& oriCanvasSize)
+{
+    float k = CalculateThumbnailScaleFactor(oriCanvasSize);
+    if (fabsf(k - 1.0f) < 1e-6f) return; // 无需缩放
+
+    Matrix3D S;
+    S[0][0] = k;   S[0][1] = 0;   S[0][2] = 0;
+    S[1][0] = 0;   S[1][1] = k;   S[1][2] = 0;
+    S[2][0] = 0;   S[2][1] = 0;   S[2][2] = 1.0f;
+
+    for (auto& rd : renderObjects) {
+        // 左乘缩放矩阵，将世界坐标整体缩放
+        rd.trans = S * rd.trans;
+        rd.inverse_trans = rd.trans.inverse();
+
+        // 更新屏幕空间中的顶点坐标
+        for (int i = 0; i < 4; ++i) {
+            rd.points[i].x *= k;
+            rd.points[i].y *= k;
+            // z 保持 1.0f，后续 RefreshDepth 会赋予深度值
+        }
+    }
+}
+
+void RenderingSystem::DrawBorderLine(Frame& frame, const Size2DInt& border, const StdPixel& color) const
+{
+    if (border.x <= 0 || border.y <= 0) return;
+
+    // 上水平线 (y = 0)
+    for (int x = 0; x < border.x && x < frame.width; ++x) {
+        frame.pixels[x] = color;
     }
 
-    // 写入画布尺寸
-    *pBuf = size;
-
-    // 解除映射，但保留文件映射句柄，以便共享内存持久存在
-    UnmapViewOfFile(pBuf);
-
-    // 关闭原有句柄（如果之前曾创建过），更新成员句柄
-    if (m_hCanvasSizeSharedMem != NULL) {
-        CloseHandle(m_hCanvasSizeSharedMem);
+    // 下水平线 (y = border.y - 1)
+    if (border.y >= 2) {
+        int yIdx = border.y - 1;
+        if (yIdx < frame.height) {
+            for (int x = 0; x < border.x && x < frame.width; ++x) {
+                frame.pixels[yIdx * frame.width + x] = color;
+            }
+        }
     }
-    m_hCanvasSizeSharedMem = hMapFile;
+
+    // 左垂直线 (x = 0)
+    for (int y = 0; y < border.y && y < frame.height; ++y) {
+        frame.pixels[y * frame.width] = color;
+    }
+
+    // 右垂直线 (x = border.x - 1)
+    if (border.x >= 2) {
+        int xIdx = border.x - 1;
+        if (xIdx < frame.width) {
+            for (int y = 0; y < border.y && y < frame.height; ++y) {
+                frame.pixels[y * frame.width + xIdx] = color;
+            }
+        }
+    }
+}
+
+void RenderingSystem::RenderThumbnailAndPrint(const LevelData& currentLevel, Size2DInt& oriCanvasSize,
+    TextureSamplingMethod samplingMethod,
+    int MSAA_Multiple) {
+    RefreshRenderObjects(currentLevel);
+
+    ScaleForThumbnail(RenderObjects, oriCanvasSize);
+
+    AABB_Remove(RenderObjects);
+    SortByDepth(RenderObjects);
+    RefreshDepth(RenderObjects);
+
+    Frame frame = Rasterize(RenderObjects, samplingMethod, MSAA_Multiple);
+
+    float k = CalculateThumbnailScaleFactor(oriCanvasSize);
+    Size2DInt scaledBorder;
+    scaledBorder.x = static_cast<int>(oriCanvasSize.x * k + 0.5f);
+    scaledBorder.y = static_cast<int>(oriCanvasSize.y * k + 0.5f);
+    StdPixel borderColor = { 255, 0, 0 };
+    DrawBorderLine(frame, scaledBorder, borderColor);
+
+    drawFrame(frame);
 }

@@ -78,6 +78,9 @@ private:
     WCHAR* m_pSharedView_OpenText;
     HANDLE m_hEvent_OpenText;
 
+    // 新增：LevelChanged 事件通知
+    HANDLE m_hEventLevelChanged;
+
     // 当前显示的目录路径
     std::string m_currentFolderPath;
 
@@ -107,4 +110,5 @@ private:
     void EnableVirtualTerminal();
     void DisableQuickEditMode();
     void SetConsoleHighlight(bool enable);
+    int GetConsoleColumns();
 };
