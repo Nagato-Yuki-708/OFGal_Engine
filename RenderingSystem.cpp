@@ -90,7 +90,7 @@ static void TraverseObject(
     }
 }
 
-void RenderingSystem::RefreshRenderObjects(const LevelData & currentLevel) {
+void RenderingSystem::RefreshRenderObjects(const LevelData& currentLevel) {
     RenderObjects.clear();
     Matrix3D identity;
     for (const auto& [objName, objPtr] : currentLevel.objects) {
@@ -146,7 +146,7 @@ Frame RenderingSystem::Rasterize(std::vector<RenderData>& renderObjects, Texture
     result.pixels.resize(CanvasSize.x * CanvasSize.y, { 0,0,0 });
 
     // 验证有效性
-    if(MSAA_Multiple < 1 || MSAA_Multiple > 4)
+    if (MSAA_Multiple < 1 || MSAA_Multiple > 4)
         MSAA_Multiple = 1;
 
     for (RenderData& renderData : renderObjects) {
@@ -210,4 +210,48 @@ void RenderingSystem::RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, 
 }
 void RenderingSystem::Print_A_Frame(const Frame& frame) {
     drawFrame(frame);
+}
+
+// ----------------------------------------------------------------------
+// 将指定 Size2DInt 写入全局命名共享内存
+// 名称: "Global\\OFGal_Engine_oriCanvasSize"
+// 该函数创建（或打开已存在的）共享内存，并将数据写入，随后取消视图映射，
+// 但保留文件映射句柄，以确保共享内存在 RenderingSystem 生命周期内有效。
+// ----------------------------------------------------------------------
+void RenderingSystem::SetCanvasSizeSharedMemory(const Size2DInt& size) {
+    // 创建或打开全局共享内存
+    HANDLE hMapFile = CreateFileMapping(
+        INVALID_HANDLE_VALUE,         // 使用系统分页文件
+        NULL,                         // 默认安全属性
+        PAGE_READWRITE,               // 读写权限
+        0,                            // 高32位大小
+        sizeof(Size2DInt),            // 低32位大小（结构体大小）
+        L"Global\\OFGal_Engine_oriCanvasSize"); // 共享内存名称
+
+    if (hMapFile == NULL) {
+        // 创建/打开失败，直接返回（实际工程可加日志）
+        return;
+    }
+
+    // 映射视图到当前进程地址空间
+    Size2DInt* pBuf = static_cast<Size2DInt*>(
+        MapViewOfFile(hMapFile, FILE_MAP_WRITE, 0, 0, sizeof(Size2DInt))
+        );
+
+    if (pBuf == NULL) {
+        CloseHandle(hMapFile);
+        return;
+    }
+
+    // 写入画布尺寸
+    *pBuf = size;
+
+    // 解除映射，但保留文件映射句柄，以便共享内存持久存在
+    UnmapViewOfFile(pBuf);
+
+    // 关闭原有句柄（如果之前曾创建过），更新成员句柄
+    if (m_hCanvasSizeSharedMem != NULL) {
+        CloseHandle(m_hCanvasSizeSharedMem);
+    }
+    m_hCanvasSizeSharedMem = hMapFile;
 }

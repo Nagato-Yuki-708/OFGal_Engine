@@ -2,6 +2,7 @@
 
 #pragma once
 #define NOMINMAX
+#include <windows.h>
 #include "BMP_Reader.h"
 #include "cmdDrawer.h"
 #include "SRP.cuh"
@@ -25,7 +26,7 @@ public:
     void RenderAndPrint(const LevelData& currentLevel, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
     void RenderAndPrint_ANISOTROPIC(const LevelData& currentLevel, int anisoLevel = 1, int MSAA_Multiple = 1);
     void Print_A_Frame(const Frame& frame);
-    void RenderThumbnailAndPrint(const LevelData& currentLevel,
+    void RenderThumbnailAndPrint(const LevelData& currentLevel, Size2DInt& oriCanvasSize,
         TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC,
         int MSAA_Multiple = 1);
 private:
@@ -42,6 +43,7 @@ private:
     Frame Rasterize(std::vector<RenderData>& renderObjects, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
     Frame Rasterize_ANISOTROPIC(std::vector<RenderData>& renderObjects, int anisoLevel = 1, int MSAA_Multiple = 1);
 
-    float CalculateThumbnailScaleFactor() const;
-    void ScaleForThumbnail(std::vector<RenderData>& renderObjects);
+    float CalculateThumbnailScaleFactor(Size2DInt& oriCanvasSize) const;
+    void ScaleForThumbnail(std::vector<RenderData>& renderObjects, Size2DInt& oriCanvasSize);
+    void DrawBorderLine(Frame& frame, const Size2DInt& border, const StdPixel& color) const;
 };

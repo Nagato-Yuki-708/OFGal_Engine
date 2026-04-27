@@ -77,7 +77,6 @@ namespace {
 
 bool initializeConsoleDrawer() {
 	if (g_initialized) return true;
-
 	if (isWindowsTerminal()) return false;
 
 	g_hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -102,6 +101,7 @@ bool initializeConsoleDrawer() {
 		return false;
 	}
 
+	// 设置极小字体（1×1 像素），配合后续像素级绘图
 	CONSOLE_FONT_INFOEX cfi;
 	cfi.cbSize = sizeof(CONSOLE_FONT_INFOEX);
 	if (GetCurrentConsoleFontEx(g_hConsole, FALSE, &cfi)) {
@@ -114,13 +114,13 @@ bool initializeConsoleDrawer() {
 	}
 
 	HWND hwnd = GetConsoleWindow();
-	//if (hwnd) ShowWindow(hwnd, SW_MAXIMIZE);
-	//Sleep(100);
-
 	if (hwnd) {
+		// 去掉最大化按钮和可调整边框
 		LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
 		style &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
 		SetWindowLongPtr(hwnd, GWL_STYLE, style);
+
+		// 计算相对于主窗口的缩放比例
 		HWND MAX_Window = FindWindow(NULL, L"OFGal_Engine");
 		float scaleX = 1920.0f / 2560.0f;
 		float scaleY = 1080.0f / 1600.0f;
@@ -133,21 +133,42 @@ bool initializeConsoleDrawer() {
 				scaleY = (float)height / 1600.0f;
 			}
 		}
+
+		// 目标窗口尺寸（像素）
+		int targetWidth = static_cast<int>(1610.0f * scaleX);
+		int targetHeight = static_cast<int>(1010.0f * scaleY);
+
 		SetWindowPos(hwnd, nullptr,
 			static_cast<int>(430.0f * scaleX),
 			static_cast<int>(0.0f),
-			static_cast<int>(1610.0f * scaleX),
-			static_cast<int>(1010.0f * scaleY),
-			SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE);
-		//SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-	}
-	Sleep(100);
+			targetWidth,
+			targetHeight,
+			SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
 
-	GetConsoleScreenBufferInfo(g_hConsole, &csbi);
+		// 等待窗口更新，确保新尺寸生效
+		Sleep(100);
+
+		// ===== 修正点：避免因旧缓冲区过小导致 srWindow 读取受限 =====
+		// 字体已设为 1×1，因此字符尺寸 ≈ 1 像素，缓冲区行列数可直接取目标像素尺寸
+		SHORT desiredCols = static_cast<SHORT>(targetWidth);
+		SHORT desiredRows = static_cast<SHORT>(targetHeight);
+
+		// 将屏幕缓冲区显式扩大到足以容纳新窗口
+		COORD newBufferSize = { desiredCols, desiredRows };
+		SetConsoleScreenBufferSize(g_hConsole, newBufferSize);
+
+		// 现在获取的 csbi 才是真实视口信息
+		GetConsoleScreenBufferInfo(g_hConsole, &csbi);
+	}
+	else {
+		// 如果没有窗口句柄，回退到直接查询
+		GetConsoleScreenBufferInfo(g_hConsole, &csbi);
+	}
+
 	SHORT windowWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
 	SHORT windowHeight = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-	COORD newBufferSize = { windowWidth, windowHeight };
-	SetConsoleScreenBufferSize(g_hConsole, newBufferSize);
+	COORD finalBufferSize = { windowWidth, windowHeight };
+	SetConsoleScreenBufferSize(g_hConsole, finalBufferSize);
 
 	g_maxCanvasSize.x = windowWidth;
 	g_maxCanvasSize.y = windowHeight;

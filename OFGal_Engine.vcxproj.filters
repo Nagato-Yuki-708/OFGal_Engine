@@ -93,17 +93,17 @@
     <ClCompile Include="GameVM.cpp">
       <Filter>Source Files\GameVM</Filter>
     </ClCompile>
-    <ClCompile Include="InputSystem.cpp">
-      <Filter>Source Files\InputSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="InputCollector.cpp">
-      <Filter>Source Files\InputSystem</Filter>
-    </ClCompile>
     <ClCompile Include="SoundSystem.cpp">
       <Filter>Source Files\SoundSystem</Filter>
     </ClCompile>
     <ClCompile Include="WindowsSystem.cpp">
       <Filter>Source Files\WindowsSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="InputSystem.cpp">
+      <Filter>Source Files\InputSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="InputCollector.cpp">
+      <Filter>Source Files\InputSystem</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -143,18 +143,6 @@
     <ClInclude Include="FrameProcessing.cuh">
       <Filter>Header Files\CUDA_SpeedUp</Filter>
     </ClInclude>
-    <ClInclude Include="KeyCode.h">
-      <Filter>Header Files\InputSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="InputCollector.h">
-      <Filter>Header Files\InputSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="InputEvent.h">
-      <Filter>Header Files\InputSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="InputSystem.h">
-      <Filter>Header Files\InputSystem</Filter>
-    </ClInclude>
     <ClInclude Include="SoundSystem.h">
       <Filter>Header Files\SoundSystem</Filter>
     </ClInclude>
@@ -163,6 +151,12 @@
     </ClInclude>
     <ClInclude Include="WindowsSystem.h">
       <Filter>Header Files\WindowsSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="InputCollector.h">
+      <Filter>Header Files\InputSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
+      <Filter>Header Files\InputSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

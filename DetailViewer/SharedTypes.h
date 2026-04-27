@@ -193,7 +193,6 @@ struct SelectedFolderInfo {
 };
 
 // ==================== 输入系统相关 ====================
-// （保持不变）
 enum class KeyCode {
     Unknown = 0,
     A, B, C, D, E, F, G, H, I, J, K, L, M,

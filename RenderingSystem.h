@@ -14,6 +14,7 @@ class RenderingSystem {
 
     Size2DInt CanvasSize;       //最大画布大小
     std::vector<RenderData> RenderObjects;
+    HANDLE m_hCanvasSizeSharedMem = NULL; // 共享内存句柄，用于存储画布大小
 
 public:
     RenderingSystem(const RenderingSystem&) = delete;
@@ -31,6 +32,9 @@ private:
     RenderingSystem() {
         initializeConsoleDrawer();
         CanvasSize = getMaxCanvasSize();
+
+        // 初始化完成后，将画布大小写入全局共享内存
+        SetCanvasSizeSharedMemory(CanvasSize);
 
         _EventBus::getInstance().subscribe_RenderAndPrint(
             [this](const LevelData& level, TextureSamplingMethod method, int msaa) {
@@ -123,4 +127,6 @@ private:
     void RefreshDepth(std::vector<RenderData>& renderObjects);
     Frame Rasterize(std::vector<RenderData>& renderObjects, TextureSamplingMethod samplingMethod = SAMPLING_BICUBIC, int MSAA_Multiple = 1);
     Frame Rasterize_ANISOTROPIC(std::vector<RenderData>& renderObjects, int anisoLevel = 1, int MSAA_Multiple = 1);
+
+    void SetCanvasSizeSharedMemory(const Size2DInt& size);
 };

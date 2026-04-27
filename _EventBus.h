@@ -2,7 +2,6 @@
 #include <functional>
 #include <vector>
 #include "SharedTypes.h"		//结构体统一定义头文件，其中包含了所有需要用于系统间通信的结构体
-#include "InputEvent.h"
 #include "SoundEvents.h"
 
 class _EventBus {

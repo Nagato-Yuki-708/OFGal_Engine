@@ -353,3 +353,63 @@ struct ChildProcessConfig {
 	std::unordered_map<std::string, DWORD> sharedMemBlocks; // 块名 -> 大小
 	std::unordered_map<std::string, bool> eventsToCreate;   // 事件名 -> 初始状态
 };
+
+// ==================== 输入系统相关 ====================
+enum class KeyCode {
+	Unknown = 0,
+	A, B, C, D, E, F, G, H, I, J, K, L, M,
+	N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+	Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
+	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+	LShift, RShift, LControl, RControl, LAlt, RAlt,
+	LWin, RWin,
+	CapsLock, NumLock, ScrollLock,
+	Space, Enter, Backspace, Tab,
+	Escape, Pause, PrintScreen,
+	Insert, Delete, Home, End, PageUp, PageDown,
+	Left, Right, Up, Down,
+	Grave, Minus, Equal, LeftBracket, RightBracket, Backslash,
+	Semicolon, Apostrophe, Comma, Period, Slash,
+	Numpad0, Numpad1, Numpad2, Numpad3, Numpad4,
+	Numpad5, Numpad6, Numpad7, Numpad8, Numpad9,
+	NumpadAdd, NumpadSubtract, NumpadMultiply, NumpadDivide, NumpadDecimal,
+	NumpadEnter,
+	VolumeMute, VolumeDown, VolumeUp,
+	MediaNext, MediaPrev, MediaStop, MediaPlayPause,
+	BrowserBack, BrowserForward, BrowserRefresh, BrowserHome,
+	CtrlS, CtrlN,
+	MouseLeft, MouseRight, MouseMiddle, MouseX1, MouseX2
+};
+
+enum class Modifier {
+	None = 0,
+	Ctrl = 1 << 0,
+	Shift = 1 << 1,
+	Alt = 1 << 2
+};
+
+inline Modifier operator|(Modifier a, Modifier b) {
+	return static_cast<Modifier>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+struct KeyBinding {
+	int      vk;
+	Modifier modifiers;
+	KeyCode  eventCode;
+	bool     edgeOnly;
+};
+
+enum class InputType {
+	KeyDown,
+	KeyUp,
+	MouseMove,
+	MouseUp,
+	MouseDown
+};
+
+struct InputEvent {
+	InputType type;
+	KeyCode   key;
+	int       mouseX = 0;
+	int       mouseY = 0;
+};
