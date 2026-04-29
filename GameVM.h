@@ -11,10 +11,29 @@ class NODE { //这是父类
 public:
 	NODE* lastNode = nullptr;
 	NODE* nextNode = nullptr;
-	NODE* loopNode = nullptr;
-
 	virtual void func_for_VM() = 0;
 };
+class If_Node :public NODE {    //这个是控制循环的节点
+public:
+	Value* condition = nullptr;
+	NODE* trueNode = nullptr;
+	NODE* falseNode = nullptr;
+	void func_for_VM() override {
+		bool cond = false;
+		if (condition && condition->type == ValueType::BOOL) {
+			cond = condition->b;
+		}
+		if (cond) {
+			nextNode = trueNode;    //用来记录符合条件的时候节点的方向
+		}
+		else {
+			nextNode = falseNode;  //用来记录不符合条件的时候节点的方向
+		}
+	}
+
+};
+
+
 class BinaryOpNode :public NODE {
 public:
 	std::vector<Value*>InData;
@@ -112,9 +131,9 @@ public:
 inline void RunVM(ExecutionContext& ctx) {
 	while (ctx.current && ctx.running) {
 		NODE* node = ctx.current;
+		node->func_for_VM();
 		ctx.current = node->nextNode;
 		ctx.lastExecuted = node;
-		node->func_for_VM();
 	}
 }
 

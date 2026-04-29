@@ -34,14 +34,22 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {
 	return nullptr;
 }
 
-void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
+void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {   //Õâ¸öÊÇÁ´½ÓÖ´ÐÐÁ÷µÄº¯Êý
 	for (auto& link : data.links) {
-		if (link.sourcePin == "exec" || link.sourcePin == "then") {
-			NODE* A = nodeMap[link.sourceNode];
-			NODE* B = nodeMap[link.targetNode];
-			if (A && B) {
-				A->nextNode = B;
-				B->lastNode = A;
+		NODE* A = nodeMap[link.sourceNode];
+		NODE* B = nodeMap[link.targetNode];
+		if (!A || !B) continue;
+		if (link.sourcePin == "exec" || link.sourcePin == "then") {  //Õë¶ÔÆÕÍ¨µÄÖ´ÐÐÁ÷
+			A->nextNode = B;
+			B->lastNode = A;
+		}
+		auto* branch = dynamic_cast<If_Node*>(A);
+		if (branch) {
+			if (link.sourcePin == "True") {
+				branch->trueNode = B;
+			}
+			if (link.sourcePin == "False") {
+				branch->falseNode = B;
 			}
 		}
 	}
@@ -76,11 +84,16 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {  //Êý¾ÝÁ÷°ó¶
 		if (!src || !dst) {
 			continue;
 		}
-		auto* srcBin = dynamic_cast<BinaryOpNode*>(src);
+		auto* srcBin = dynamic_cast<BinaryOpNode*>(src);  //³¢ÊÔ×ª»»£¬È»ºó½øÐÐÏàÓ¦µÄ²Ù×÷¡£
 		auto* dstBin = dynamic_cast<BinaryOpNode*>(dst);
 		if (srcBin && dstBin) {
 			int dstIndex = (link.targetPin == "A") ? 0 : 1;
 			dstBin->InData[dstIndex] = &srcBin->OutData[0];
+		}
+		auto* branch = dynamic_cast<If_Node*>(dst);
+
+		if (link.targetPin == "Condition") {
+			branch->condition = &srcBin->OutData[0];
 		}
 		auto* st = dynamic_cast<SetTransforNode*>(dst);
 		if (srcBin && st) {
