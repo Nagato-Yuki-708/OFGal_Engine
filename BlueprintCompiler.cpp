@@ -1,4 +1,4 @@
-#include"BlueprintCompiler.h"
+﻿#include"BlueprintCompiler.h"
 #include<iostream>
 
 void BlueprintCompiler::Compile(const BlueprintData& data) {  //这是蓝图编辑器的核心函数，能够调用其他的组件函数
@@ -57,12 +57,20 @@ void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
 	//   Continue_Node: loopNode 需指向所属 While
 	//   循环体末尾:    nextNode → While（回边），loopNode → While（标记所属循环）
 	for (auto& link : data.links) {
-		if (link.sourcePin == "exec" || link.sourcePin == "then") {
-			NODE* A = nodeMap[link.sourceNode];
-			NODE* B = nodeMap[link.targetNode];
-			if (A && B) {
-				A->nextNode = B;
-				B->lastNode = A;
+		NODE* A = nodeMap[link.sourceNode];
+		NODE* B = nodeMap[link.targetNode];
+		if (!A || !B) continue;
+		if (link.sourcePin == "exec" || link.sourcePin == "then") {  //�����ͨ��ִ����
+			A->nextNode = B;
+			B->lastNode = A;
+		}
+		auto* branch = dynamic_cast<If_Node*>(A);
+		if (branch) {
+			if (link.sourcePin == "True") {
+				branch->trueNode = B;
+			}
+			if (link.sourcePin == "False") {
+				branch->falseNode = B;
 			}
 		}
 	}
@@ -121,6 +129,11 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {  //数据流
 		if (srcBin && dstBin) {
 			int dstIndex = (link.targetPin == "A") ? 0 : 1;
 			dstBin->InData[dstIndex] = &srcBin->OutData[0];
+		}
+		auto* branch = dynamic_cast<If_Node*>(dst);
+
+		if (link.targetPin == "Condition") {
+			branch->condition = &srcBin->OutData[0];
 		}
 		auto* st = dynamic_cast<SetTransforNode*>(dst);
 		if (srcBin && st) {
