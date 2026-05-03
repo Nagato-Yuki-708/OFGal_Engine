@@ -3,7 +3,7 @@
 #include "GameVM.h"
 
 Value calcBinary(const Value& a, const Value& b, char op) {
-	if (a.type == ValueType::INT && b.type == INT) {
+	if (a.type == ValueType::INT && b.type == ValueType::INT) {
 		int x = a.i;
 		int y = b.i;
 		switch (op) {
@@ -144,4 +144,17 @@ void SetTransforNode::func_for_VM() {
 
 	if (in_scale_x) tf.Scale.x = in_scale_x->f;
 	if (in_scale_y) tf.Scale.y = in_scale_y->f;
+}
+
+void While_Node::func_for_VM() {
+	bool shouldRun = false;
+	if ( condition && condition->type == ValueType::BOOL) {
+		shouldRun = condition->b;
+	}
+	if (shouldRun) {
+		nextNode = loopBodyNode;
+	}
+	else {
+		nextNode = loopExitNode;
+	}
 }

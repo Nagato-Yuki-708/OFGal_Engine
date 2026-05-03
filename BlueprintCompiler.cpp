@@ -45,11 +45,20 @@ void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {   //Õâ¸öÊÇÁ´
 		}
 		auto* branch = dynamic_cast<If_Node*>(A);
 		if (branch) {
-			if (link.sourcePin == "True") {
+			if (link.sourcePin == "OEXEC_A") {
 				branch->trueNode = B;
 			}
-			if (link.sourcePin == "False") {
+			if (link.sourcePin == "OEXEC_B") {
 				branch->falseNode = B;
+			}
+		}
+		auto* whileNode = dynamic_cast<While_Node*>(A);
+		if (whileNode) {
+			if (link.sourcePin == "OEXEC_Loop") {
+				whileNode->loopBodyNode = B;
+			}
+			else if (link.sourcePin == "OEXEC") {
+				whileNode->loopExitNode = B;
 			}
 		}
 	}
@@ -68,7 +77,7 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {     //Êý¾Ý¿Õ¼ä
 			}
 		}
 		if (auto* st = dynamic_cast<SetTransforNode*>(node)) {
-		
+		//ÕâÀïÊÇÄ¬ÈÏÊ²Ã´¶¼²»×ö
 		}
 	}
 }
@@ -92,8 +101,21 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {  //Êý¾ÝÁ÷°ó¶
 		}
 		auto* branch = dynamic_cast<If_Node*>(dst);
 
-		if (link.targetPin == "Condition") {
+		if (link.targetPin == "shouldRunA") {
 			branch->condition = &srcBin->OutData[0];
+		}
+
+		if (auto* whileNode = dynamic_cast<While_Node*>(dst)) {
+
+			Value* out = nullptr;
+
+			if (auto* bin = dynamic_cast<BinaryOpNode*>(src)) {
+				out = &bin->OutData[0];
+			}
+
+			if (link.targetPin == "shouldRunLoop") {
+				whileNode->condition = out;
+			}
 		}
 		auto* st = dynamic_cast<SetTransforNode*>(dst);
 		if (srcBin && st) {

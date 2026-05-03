@@ -132,7 +132,14 @@ public:
 	void func_for_VM();
 };
 //以下是执行系统的定义
+class While_Node :public NODE {
+public:
+	Value* condition = nullptr;   //判断条件
+	NODE* loopExitNode = nullptr;  // 执行出口，循环体内部的
+	NODE* loopBodyNode = nullptr;  // 循环体的整个大出口
+	void func_for_VM();
 
+};
 class ExecutionContext {   //执行引擎,起到一个记录上下文的作用
 public:
 	NODE* current = nullptr;
