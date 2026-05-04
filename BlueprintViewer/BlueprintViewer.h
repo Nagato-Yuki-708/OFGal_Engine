@@ -10,11 +10,13 @@
 #include <windows.h>
 #include <string>
 #include <vector>
+#include <sstream>
 
 static const char* RESET = "\x1b[0m";
 static const char* CYAN = "\x1b[36m";
 static const char* YELLOW = "\x1b[33m";
 static const char* WHITE = "\x1b[37m";
+static const char* ORANGE = "\x1b[38;5;208m";
 
 class BlueprintViewer {
 public:
@@ -22,6 +24,15 @@ public:
     ~BlueprintViewer();
 
     void Run();
+
+    void MoveSelection1Up();
+    void MoveSelection1Down();
+    void MoveSelection2Up();
+    void MoveSelection2Down();
+    void MoveToNextFlow();
+    void MoveToPrevFlow();
+    void OnDelete();
+    void Edit();
 
 private:
     std::wstring currentBPPath;

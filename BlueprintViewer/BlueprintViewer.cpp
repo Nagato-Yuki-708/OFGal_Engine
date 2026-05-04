@@ -174,14 +174,34 @@ void BlueprintViewer::Run() {
         for (const auto& ev : eventsCopy) {
             if (ev.type == InputType::KeyDown) {
                 switch (ev.key) {
-                case KeyCode::W:  break;
-                case KeyCode::S:  break;
-                case KeyCode::Up: break;
-                case KeyCode::Down: break;
-                case KeyCode::A:  break;
-                case KeyCode::D:  break;
-                case KeyCode::F:  break;
-                case KeyCode::Delete: break;
+                case KeyCode::W:  
+                    MoveSelection1Up();
+                    break;
+                case KeyCode::S:  
+                    MoveSelection1Down();
+                    break;
+                case KeyCode::Up: 
+                    MoveSelection2Up();
+                    break;
+                case KeyCode::Down: 
+                    MoveSelection2Down();
+                    break;
+                case KeyCode::A:  
+                    MoveToPrevFlow();
+                    break;
+                case KeyCode::D:  
+                    MoveToNextFlow();
+                    break;
+                case KeyCode::F:
+                    isEditing = true;
+                    Edit();
+                    isEditing = false;
+                    break;
+                case KeyCode::Delete: 
+                    isEditing = true;
+                    OnDelete();
+                    isEditing = false;
+                    break;
                 default: break;
                 }
             }
@@ -219,7 +239,21 @@ void BlueprintViewer::ConfigureConsole() {
 }
 
 void BlueprintViewer::ClearScreen() {
-    std::cout << "\x1b[2J\x1b[H" << std::flush;
+    //std::cout << "\x1b[2J\x1b[H" << std::flush;
+
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (!GetConsoleScreenBufferInfo(hOut, &csbi)) return;
+
+    DWORD dwSize = csbi.dwSize.X * csbi.dwSize.Y;
+    DWORD dwWritten;
+    COORD coord = { 0, 0 };
+
+    FillConsoleOutputCharacterW(hOut, L' ', dwSize, coord, &dwWritten);
+    FillConsoleOutputAttribute(hOut, csbi.wAttributes, dwSize, coord, &dwWritten);
+    SetConsoleCursorPosition(hOut, coord);
 }
 
 void BlueprintViewer::FlushInputBuffer() {
@@ -262,9 +296,59 @@ void BlueprintViewer::SetWindowSizeAndPosition() {
 }
 
 void BlueprintViewer::BuildAndPrintHelpText() {
-    // 待实现
+    int cols = GetConsoleColumns();
+    std::string separator(cols, '=');
+    std::ostringstream oss;
+
+    oss << CYAN << "=== Help ===" << RESET << "\n";
+    oss << separator << "\n";
+
+    oss << CYAN << "W" << RESET << " - Move selection 1 up\n";
+    oss << CYAN << "S" << RESET << " - Move selection 1 down\n";
+    oss << CYAN << "Up" << RESET << " - Move selection 2 up\n";   // ↑
+    oss << CYAN << "Down" << RESET << " - Move selection 2 down\n"; // ↓
+    oss << CYAN << "Delete" << RESET << " - Remove selected node 1 and all its descendants\n";
+    oss << CYAN << "F" << RESET << " - More operations\n";
+    oss << CYAN << "A" << RESET << " - Previous execution flow\n";
+    oss << CYAN << "D" << RESET << " - Next execution flow\n";
+
+    oss << separator << "\n";
+    std::cout << oss.str();
 }
 
 void BlueprintViewer::BuildAndPrintCurrentFlow() {
     // 待实现
+}
+
+void BlueprintViewer::MoveSelection1Up() {
+    ClearScreen();
+    BuildAndPrintHelpText();
+}
+void BlueprintViewer::MoveSelection1Down() {
+    ClearScreen();
+    BuildAndPrintHelpText();
+}
+void BlueprintViewer::MoveSelection2Up() {
+    ClearScreen();
+    BuildAndPrintHelpText();
+}
+void BlueprintViewer::MoveSelection2Down() {
+    ClearScreen();
+    BuildAndPrintHelpText();
+}
+void BlueprintViewer::MoveToNextFlow() {
+    ClearScreen();
+    BuildAndPrintHelpText();
+}
+void BlueprintViewer::MoveToPrevFlow() {
+    ClearScreen();
+    BuildAndPrintHelpText();
+}
+void BlueprintViewer::OnDelete() {
+    ClearScreen();
+    FlushInputBuffer();
+}
+void BlueprintViewer::Edit() {
+    ClearScreen();
+    FlushInputBuffer();
 }
