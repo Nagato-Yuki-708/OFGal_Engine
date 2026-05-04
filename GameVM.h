@@ -164,11 +164,11 @@ public:
 class If_Node : public NODE {  // 蓝图节点类型："If"
 public:
 	Value* condition = nullptr;
-	NODE* trueBranch = nullptr;
-	NODE* falseBranch = nullptr;
+	NODE* trueNode = nullptr;
+	NODE* falseNode = nullptr;
 	void func_for_VM(ExecutionContext& ctx) override {
 		bool cond = (condition && condition->type == ValueType::BOOL) ? condition->b : false;
-		ctx.current = cond ? trueBranch : falseBranch;
+		ctx.current = cond ? trueNode : falseNode;
 	}
 	// ★ 编译注意：
 	//   1. BuildExecLinks 需要处理 sourcePin=="true"→trueBranch, sourcePin=="false"→falseBranch
@@ -179,7 +179,8 @@ public:
 class While_Node : public NODE {  // 蓝图节点类型："While"
 public:
 	Value* condition = nullptr;
-	NODE* loopBody = nullptr;
+	NODE* loopBodyNode = nullptr;
+	NODE* loopExitNode = nullptr;
 	Value iterationCount;
 	int _count = 0;
 	void func_for_VM(ExecutionContext& ctx) override {
@@ -191,16 +192,10 @@ public:
 		} else {
 			iterationCount = Value::makeInt(_count);
 			_count++;
-			ctx.current = loopBody;
+			ctx.current = loopBodyNode;
 		}
 	}
-	// ★ 编译注意：
-	//   1. BuildExecLinks 需要处理 sourcePin=="loopBody"→loopBody
-	//   2. BuildExecLinks 中需将此节点的 loopNode 指向自身（回边到条件判断）
-	//   3. 循环体最后一个节点的 nextNode → 指向此节点（循环回边）
-	//   4. 循环体最后一个节点的 loopNode → 指向此节点（标记所属循环）
-	//   5. 识别"循环体最后一个节点"需要遍历 BlueprintData 的 links 结构
-	//   6. BuildDataLinks 需要处理 targetPin=="condition"→condition 指针绑定
+	
 };
 
 class Break_Node : public NODE {  // 蓝图节点类型："Break"
@@ -462,7 +457,7 @@ public:
 inline void RunVM(ExecutionContext& ctx) {
 	while (ctx.current && ctx.running) {
 		NODE* node = ctx.current;
-		node->func_for_VM();
+		node->func_for_VM(ctx);
 		if (!node->nextNode) {
 			ctx.running = false;
 		}
