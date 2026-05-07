@@ -1,11 +1,14 @@
 #include"BlueprintCompiler.h"
 #include<iostream>
 
-void BlueprintCompiler::Compile(const BlueprintData& data) {  //这是蓝图编辑器的核心函数，能够调用其他的组件函数
+CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
+	currentCompiled = new CompiledBlueprint();
+	currentCompiled->sourceData = data;
+	//这是蓝图编辑器的核心函数，能够调用其他的组件函数
 	for (auto& n : data.nodes) {
 		NODE* node = CreateNode(n);
 		if (node) {
-			nodeMap[n.id] = node;
+			currentCompiled->nodeMap[n.id] = node;
 		}
 	}
 	InitNodeData(data);
@@ -13,7 +16,7 @@ void BlueprintCompiler::Compile(const BlueprintData& data) {  //这是蓝图编�
 	BuildDataLinks(data);
 	for (auto& n : data.nodes) {
 		if (n.type == "BeginPlay") {
-			entryNodes.push_back(nodeMap[n.id]);
+			currentCompiled->entryNodes.push_back(currentCompiled->nodeMap[n.id]);
 		}
 	}
 }
@@ -50,8 +53,8 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建
 
 void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
 	for (auto& link : data.links) {
-		NODE* A = nodeMap[link.sourceNode];
-		NODE* B = nodeMap[link.targetNode];
+		NODE* A = currentCompiled->nodeMap[link.sourceNode];
+		NODE* B = currentCompiled->nodeMap[link.targetNode];
 		if (!A || !B) continue;
 		if (link.sourcePin == "exec" || link.sourcePin == "then") {  //这里进行基础的链接
 			A->nextNode = B;
@@ -65,8 +68,8 @@ void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
 		while (updated) {
 			updated = false;
 			for (auto& link : data.links) {
-				NODE* A = nodeMap[link.sourceNode];
-				NODE* B = nodeMap[link.targetNode];
+				NODE* A = currentCompiled->nodeMap[link.sourceNode];
+				NODE* B = currentCompiled->nodeMap[link.targetNode];
 				if (nodeTowhile.count(A) && !nodeTowhile.count(B)) {
 					nodeTowhile[B] = nodeTowhile[A];
 					updated = true;
@@ -109,7 +112,7 @@ void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
 
 void BlueprintCompiler::InitNodeData(const BlueprintData& data) {     
 	for (auto& n : data.nodes) {
-		NODE* node = nodeMap[n.id];
+		NODE* node = currentCompiled->nodeMap[n.id];
 		if (auto* bin = dynamic_cast<BinaryOpNode*>(node)) {  //如果是运算节点，那么就给他们的输入输出数据分配空间
 			bin->InData.resize(2);
 			bin->OutData.resize(1);
@@ -170,8 +173,8 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
 			continue;
 		}
 
-		NODE* src = nodeMap[link.sourceNode];
-		NODE* dst = nodeMap[link.targetNode];
+		NODE* src = currentCompiled->nodeMap[link.sourceNode];
+		NODE* dst = currentCompiled->nodeMap[link.targetNode];
 		if (!src || !dst) continue;
 
 		Value* out = nullptr;
@@ -230,7 +233,7 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
 		}
 	}
 }void BlueprintCompiler::Run() {
-	for (auto* entry : entryNodes) {
+	for (auto* entry : currentCompiled->entryNodes) {
 		ExecutionContext ctx;
 		for (auto& var : currentBlueprint.variables) {   //这里进行变量表的绑定
 			Value v;

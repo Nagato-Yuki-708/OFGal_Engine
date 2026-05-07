@@ -173,6 +173,9 @@
     <ClInclude Include="BlueprintCompiler.h">
       <Filter>Header Files\GameVM</Filter>
     </ClInclude>
+    <ClInclude Include="CompiledBlueprint.h">
+      <Filter>Header Files\GameVM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="莉可丽丝1.bmp">

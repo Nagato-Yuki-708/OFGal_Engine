@@ -160,6 +160,7 @@
     <ClInclude Include="BlueprintCompiler.h" />
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
+    <ClInclude Include="CompiledBlueprint.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FrameProcessing.cuh" />
     <ClInclude Include="GameVM.h" />
