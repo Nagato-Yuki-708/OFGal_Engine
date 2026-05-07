@@ -8,6 +8,7 @@
 #include"InputCollector.h"
 #include "InputSystem.h"
 #include "InputEvent.h"
+#include <unordered_map>
 
 // ============================================================
 // 前向声明
@@ -282,6 +283,45 @@ public:
 		// 单出口节点，不修改 ctx.current，RunVM 自动走 nextNode
 	}
 	// ★ 编译注意：BuildDataLinks 需处理 targetPin=="path"
+};
+
+// ============================================================
+// 蓝图变量上下文
+// ============================================================
+
+// 蓝图运行时变量表，由 BlueprintCompiler 在编译阶段从 BlueprintData::variables 初始化
+// 使用方式：编译器在 Run() 前创建实例，调用 setCurrent()，执行链中 GET_VAR / SET_VAR 即可访问
+class BlueprintContext {
+public:
+	std::unordered_map<std::string, Value> variables;
+
+	// 根据变量名查找，返回指针（不存在则 nullptr）
+	Value* getVariable(const std::string& name) {
+		auto it = variables.find(name);
+		return (it != variables.end()) ? &it->second : nullptr;
+	}
+
+	// 写入变量（不存在则创建，已存在则覆盖）
+	void setVariable(const std::string& name, const Value& val) {
+		variables[name] = val;  // 拷贝写入
+	}
+
+	// 获取当前线程的蓝图上下文（线程局部存储，PlayPerNMsNode 等多线程场景安全）
+	static BlueprintContext* current() {
+		return currentRef();
+	}
+
+	// 设置当前线程的蓝图上下文
+	static void setCurrent(BlueprintContext* ctx) {
+		currentRef() = ctx;
+	}
+
+private:
+	// 函数级 thread_local，头文件安全（无需 .cpp 定义）
+	static BlueprintContext*& currentRef() {
+		thread_local BlueprintContext* s_currentContext = nullptr;
+		return s_currentContext;
+	}
 };
 
 // ============================================================

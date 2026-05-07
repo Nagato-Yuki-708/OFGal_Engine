@@ -1,4 +1,4 @@
-#include"BlueprintCompiler.h"
+﻿#include"BlueprintCompiler.h"
 #include<iostream>
 
 CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
