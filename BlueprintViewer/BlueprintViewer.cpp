@@ -1990,6 +1990,7 @@ void BlueprintViewer::PrintEntryNodes() {
 
 void BlueprintViewer::RenderAll() {
     ClearScreen();
+    BuildAndPrintHelpText();
     PrintEntryNodes();
     int cols = GetConsoleColumns();
     std::string splitLine(cols, '-');
