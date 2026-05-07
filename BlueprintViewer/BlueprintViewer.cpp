@@ -217,6 +217,7 @@ void BlueprintViewer::Run() {
         else if (dwWait == WAIT_OBJECT_0 + 2 ||
             (numEvents == 2 && eventsToWait[1] == hVarChangedEvent && dwWait == WAIT_OBJECT_0)) {
             DEBUG_W(L"[BlueprintViewer] VarChanged event signaled\n");
+            SetEvent(hLoadBPEvent);
         }
         else if (dwWait == WAIT_FAILED) {
             break;
@@ -373,7 +374,7 @@ void BlueprintViewer::BuildAndPrintHelpText() {
     oss << CYAN << "Up" << RESET << " - Move selection 2 up\n";
     oss << CYAN << "Down" << RESET << " - Move selection 2 down\n";
     oss << CYAN << "Delete" << RESET << " - Remove selected node 1 and all its descendants\n";
-    oss << CYAN << "F" << RESET << " - More operations\n";
+    oss << CYAN << "F" << RESET << " - Add a new Node\n";
     oss << CYAN << "A" << RESET << " - Previous execution flow\n";
     oss << CYAN << "D" << RESET << " - Next execution flow\n";
 
@@ -811,15 +812,19 @@ bool BlueprintViewer::Edit() {
         while (true) {
             ClearScreen();
             printBold("Choose operation:\n\n");
-            std::cout << "  [E]  Create a new entry node (BeginPlay, Play_per_N_ms, ...)\n";
-            std::cout << "  [I]  Insert a normal node after a selected node\n";
-            std::cout << "\nEnter your choice or \"#esc#\" to cancel: > ";
+            std::cout << "  [1]  Create a new entry node (BeginPlay, Play_per_N_ms, ...)\n";
+            std::cout << "  [2]  Insert a normal node after a selected node\n";
+            std::cout << "\nEnter the number or \"#esc#\" to cancel: > ";
             std::string line = readLine();
             if (isEsc(line)) return false;
             if (!line.empty()) {
                 char ch = (char)tolower((unsigned char)line[0]);
-                if (ch == 'e') { mode = EditMode::EntryNode; break; }
-                else if (ch == 'i') { mode = EditMode::InsertNormal; break; }
+                if (ch == '1') { mode = EditMode::EntryNode; break; }
+                else if (ch == '2') { mode = EditMode::InsertNormal; break; }
+                else {
+                    std::cout << "\nYou must input number \"1\" or \"2\" to continue!Or \"#esc#\" to cancel." << std::endl;
+                    system("pause");
+                }
             }
         }
     }
@@ -1008,12 +1013,80 @@ bool BlueprintViewer::Edit() {
         while (true) {
             ClearScreen();
             std::cout << "Pin: " << pin.name << " (type: " << pin.type << ")";
-            if (required) std::cout << " [REQUIRED]";
+            if (required) std::cout << " [REQUIRED]\n";
+            if (newNodeType == "FrameProcess") {
+                for (std::string op : AllFrameProcessOps)
+                    std::cout << " " << op << "; ";
+            }else if (newNodeType == "Play_when_N_push_down") {
+                for (std::string StdBtn : std::views::keys(StdkeysMap)) {
+                    static int BtnPrintCount = 0;
+                    std::cout << " " << StdBtn << "; ";
+                    ++BtnPrintCount;
+                    if (BtnPrintCount == 9) {
+                        std::cout << "\n";
+                        BtnPrintCount = 0;
+                    }
+                }
+            }else if (newNodeType == "Play_per_N_ms") {
+                std::cout << "Required an integer representing time in milliseconds\n";
+            }
             std::cout << "\nEnter literal value or press Enter to skip (\"#esc#\" to cancel):\n> ";
             std::string val = readLine();
             if (isEsc(val)) return false;
             if (!val.empty()) {
-                pin.literal = val;
+                bool valid = false;
+                if (newNodeType == "FrameProcess") {
+                    for (std::string op : AllFrameProcessOps) {
+                        if (val == op)
+                            valid = true;
+                    }
+                    if (valid)
+                        pin.literal = val;
+                    else {
+                        std::cout << "Invalid Frame Process Op. Try again.\n";
+                        system("pause");
+                        continue;
+                    }
+                }
+                else if (newNodeType == "Play_when_N_push_down") {
+                    for (std::string StdBtn : std::views::keys(StdkeysMap)) {
+                        if (val == StdBtn) {
+                            valid = true;
+                            break;
+                        }
+                    }
+                    if (valid)
+                        pin.literal = val;
+                    else {
+                        std::cout << "Invalid Button. Try again.\n";
+                        system("pause");
+                        continue;
+                    }
+                }
+                else if (newNodeType == "Play_per_N_ms") {
+                    if (val[0] != '0')
+                    {
+                        valid = true;
+                        for (char c : val) {
+                            if (!std::isdigit(static_cast<unsigned char>(c))) 
+                            {
+                                valid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (valid) {
+                        pin.literal = val;
+                    }
+                    else {
+                        std::cout << "Invalid time. Try again.\n";
+                        system("pause");
+                        continue;
+                    }
+                }
+                else {
+                    pin.literal = val;
+                }
                 break;
             }
             else {
@@ -1041,7 +1114,7 @@ bool BlueprintViewer::Edit() {
                 return s;
                 };
             ans = toLower(ans);
-            if (ans == "y" || ans == "yes") {
+            if (ans == "n" || ans == "no") {
                 struct PropEntry {
                     std::string key;
                     std::string desc;
@@ -1134,7 +1207,7 @@ bool BlueprintViewer::Edit() {
                 }
                 break;
             }
-            else if (ans == "n" || ans == "no") {
+            else if (ans == "y" || ans == "yes") {
                 break;
             }
         }
@@ -1206,11 +1279,11 @@ bool BlueprintViewer::Edit() {
                 return s;
                 };
             ans = toLower(ans);
-            if (ans == "y" || ans == "yes") {
+            if (ans == "n" || ans == "no") {
                 std::set<int> chosenEffects;
                 while (true) {
                     ClearScreen();
-                    std::cout << "Available post‑processing effects:\n";
+                    std::cout << "Available post-processing effects:\n";
                     for (size_t i = 0; i < effects.size(); ++i)
                         std::cout << " " << i + 1 << ". " << effects[i].key << " - " << effects[i].desc << "\n";
                     std::cout << "\nEnter comma-separated numbers or 'all' to add all, or press Enter to skip: > ";
@@ -1321,7 +1394,7 @@ bool BlueprintViewer::Edit() {
                 }
                 break;
             }
-            else if (ans == "n" || ans == "no") {
+            else if (ans == "y" || ans == "yes") {
                 // 用户选择跳过，不设置任何效果属性
                 break;
             }
