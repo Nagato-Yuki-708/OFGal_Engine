@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <set>
 #include <unordered_set>
 #include <algorithm> // for std::find
 #include <utility>  // for std::pair

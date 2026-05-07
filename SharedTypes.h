@@ -120,7 +120,7 @@ struct ObjectData {
 	std::optional<PictureComponent> Picture;
 	std::optional<TextblockComponent> Textblock;
 	std::optional<TriggerAreaComponent> TriggerArea;
-	std::optional<BlueprintComponent> Blueprint;
+	std::optional<BlueprintComponent> Blueprint;//has_value()
 };
 
 // 场景结构

@@ -61,6 +61,7 @@ BlueprintViewer::BlueprintViewer() {
 
     // ---------- 按键绑定 ----------
     m_inputSystem.SetGlobalCapture(false);
+    m_inputSystem.SetWindowHandle(GetConsoleWindow());
 
     m_inputCollector.AddBinding({ 'W',        Modifier::None, KeyCode::W,      true });
     m_inputCollector.AddBinding({ 'S',        Modifier::None, KeyCode::S,      true });
@@ -242,12 +243,20 @@ void BlueprintViewer::Run() {
                     isEditing = true;
                     if(Edit())
                         SetEvent(hLoadBPEvent);
+                    else{
+                        ClearScreen();
+                        RenderAll();
+                    }
                     isEditing = false;
                     break;
                 case KeyCode::Delete:
                     isEditing = true;
                     if(OnDelete())
                         SetEvent(hLoadBPEvent);
+                    else {
+                        ClearScreen();
+                        RenderAll();
+                    }
                     isEditing = false;
                     break;
                 default: break;
@@ -465,36 +474,40 @@ bool BlueprintViewer::OnDelete() {
 
     if (!nodeExists(selectedNodeId1) || !nodeExists(selectedNodeId2)) {
         std::cout << "Invalid selection. One or both selected nodes do not exist.\n";
-        std::cout << "Press any key to continue...\n";
-        _getch();
+        std::cout << "Press Enter to continue...\n";
+        std::cin.get();   // 等待回车
         return false;
     }
 
-    // ---------- 2. 选择对一号还是二号操作 ----------
+    // ---------- 2. 选择操作对象 ----------
     int targetNodeId = -1;
     while (true) {
         ClearScreen();
         std::cout << "Which selection to delete?\n";
         std::cout << "1 - Node ID " << selectedNodeId1 << " (Selection 1)\n";
         std::cout << "2 - Node ID " << selectedNodeId2 << " (Selection 2)\n";
-        std::cout << "Press Esc to cancel.\n";
+        std::cout << "Enter \"#esc#\" to cancel.\n> ";
 
-        int ch = _getch();
-        if (ch == 27) {          // Esc 键
+        std::string line;
+        if (!std::getline(std::cin, line)) {
+            // 输入流异常，取消操作
             return false;
         }
-        if (ch == '1') {
+        if (line == "#esc#") {
+            return false;
+        }
+        if (line == "1") {
             targetNodeId = selectedNodeId1;
             break;
         }
-        else if (ch == '2') {
+        else if (line == "2") {
             targetNodeId = selectedNodeId2;
             break;
         }
-        // 其他按键则继续循环
+        // 其他输入忽略，循环重试
     }
 
-    // 获取目标节点的信息，用于显示
+    // 获取目标节点信息
     const Node* targetNode = nullptr;
     for (const auto& nd : currentBPData.nodes) {
         if (nd.id == targetNodeId) {
@@ -503,27 +516,31 @@ bool BlueprintViewer::OnDelete() {
         }
     }
     if (!targetNode) {
-        // 理论上不会发生，但如果结构异常则取消
         return false;
     }
 
-    // ---------- 3. 确认删除并显示节点信息 ----------
+    // ---------- 3. 确认删除 ----------
     ClearScreen();
     std::cout << "Are you sure you want to delete the following node and ALL its successors?\n\n";
     std::cout << "  Node ID   : " << targetNode->id << "\n";
     std::cout << "  Node Type : " << targetNode->type << "\n\n";
-    std::cout << "Confirm? (Y/N)  Esc to cancel.\n";
+    std::cout << "Confirm? (Y/N)  Enter \"#esc#\" to cancel.\n> ";
 
-    int ch = _getch();
-    while (ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N' && ch != 27) {
-        ch = _getch();      // 只接受 Y/N/Esc
-    }
-    if (ch == 27 || ch == 'n' || ch == 'N') {
-        return false;
+    std::string confirm;
+    while (true) {
+        if (!std::getline(std::cin, confirm)) {
+            return false;
+        }
+        if (confirm == "#esc#" || confirm == "n" || confirm == "N") {
+            return false;
+        }
+        if (confirm == "y" || confirm == "Y") {
+            break;
+        }
+        std::cout << "Invalid input. Type Y/N or #esc# to cancel.\n> ";
     }
 
     // ---------- 4. 执行删除（在副本上操作） ----------
-    // 收集所有执行流可达的后继节点（包含自身）
     auto getDescendants = [&](int startId) -> std::vector<int> {
         std::unordered_set<int> visited;
         std::function<void(int)> dfs = [&](int id) {
@@ -534,7 +551,6 @@ bool BlueprintViewer::OnDelete() {
                 if (n.id == id) { node = &n; break; }
             }
             if (!node) return;
-            // 遍历所有 exec 类型的输出引脚
             for (const auto& pin : node->pins) {
                 if (pin.io == "O" && pin.type == "exec") {
                     for (const auto& link : currentBPData.links) {
@@ -551,7 +567,6 @@ bool BlueprintViewer::OnDelete() {
 
     std::vector<int> idsToDelete = getDescendants(targetNodeId);
 
-    // 复制 currentBPData 到 temp
     BlueprintData temp = currentBPData;
 
     // 删除节点
@@ -560,29 +575,26 @@ bool BlueprintViewer::OnDelete() {
             [&](const Node& n) {
                 return std::find(idsToDelete.begin(), idsToDelete.end(), n.id) != idsToDelete.end();
             }),
-        temp.nodes.end()
-    );
+        temp.nodes.end());
 
-    // 删除所有与被删节点相关的连接
+    // 删除涉及的连接
     temp.links.erase(
         std::remove_if(temp.links.begin(), temp.links.end(),
             [&](const Link& l) {
                 return std::find(idsToDelete.begin(), idsToDelete.end(), l.sourceNode) != idsToDelete.end()
                     || std::find(idsToDelete.begin(), idsToDelete.end(), l.targetNode) != idsToDelete.end();
             }),
-        temp.links.end()
-    );
+        temp.links.end());
 
-    // 删除与被删节点关联的事件（例如入口事件）
+    // 删除事件
     temp.events.erase(
         std::remove_if(temp.events.begin(), temp.events.end(),
             [&](const Event& e) {
                 return std::find(idsToDelete.begin(), idsToDelete.end(), e.id) != idsToDelete.end();
             }),
-        temp.events.end()
-    );
+        temp.events.end());
 
-    // 写回文件（路径由 wstring 转为 UTF-8 string）
+    // 写回文件（需要 WideToUTF8 转换）
     std::string pathStr = WideToUTF8(currentBPPath);
     WriteBPData(pathStr, temp);
 
@@ -592,9 +604,963 @@ bool BlueprintViewer::Edit() {
     ClearScreen();
     FlushInputBuffer();
 
-    bool shouldReload = false;
+    // ======================== 辅助 Lambda ========================
+    auto readLine = [&]() -> std::string {
+        std::string line;
+        if (!std::getline(std::cin, line)) return "#esc#";
+        return line;
+        };
+    auto isEsc = [&](const std::string& s) { return s == "#esc#"; };
+    auto printBold = [](const std::string& text) {
+        std::cout << CYAN << text << RESET;
+        };
 
-    return shouldReload;
+    auto getMaxId = [&](const std::vector<Node>& nodes) -> int {
+        int m = -1;
+        for (const auto& n : nodes)
+            if (n.id > m) m = n.id;
+        return m;
+        };
+
+    auto getTemplatePins = [&](const std::string& type, const std::string& dataType = "") -> std::vector<Pin> {
+        std::vector<Pin> pins;
+        if (type == "Add" || type == "Sub" || type == "Mul" || type == "Div") {
+            std::string dt = dataType.empty() ? "int" : dataType;
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"A","I",dt,std::nullopt},
+                {"B","I",dt,std::nullopt},
+                {"OEXEC","O","exec",std::nullopt},
+                {"result","O",dt,std::nullopt}
+            };
+        }
+        else if (type == "GreaterThan" || type == "LessThan" || type == "GreaterThanOrEqualTo" ||
+            type == "LessThanOrEqualTo" || type == "EqualTo" || type == "NotEqualTo") {
+            std::string dt = dataType.empty() ? "int" : dataType;
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"A","I",dt,std::nullopt},
+                {"B","I",dt,std::nullopt},
+                {"OEXEC","O","exec",std::nullopt},
+                {"result","O","bool",std::nullopt}
+            };
+        }
+        else if (type == "if") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"shouldRunA","I","bool",std::nullopt},
+                {"OEXEC_A","O","exec",std::nullopt},
+                {"OEXEC_B","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "while") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"shouldRunLoop","I","bool",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt},
+                {"OEXEC_Loop","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "break") {
+            pins = { {"IEXEC","I","exec",std::nullopt} };
+        }
+        else if (type == "continue") {
+            pins = { {"IEXEC","I","exec",std::nullopt} };
+        }
+        else if (type == "GetVariable") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"VarToGet","I","string",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt},
+                {"VarCopy","O",dataType.empty() ? "int" : dataType,std::nullopt}
+            };
+        }
+        else if (type == "SetVariable") {
+            std::string dt = dataType.empty() ? "int" : dataType;
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"VarToSet","I","string",std::nullopt},
+                {"NewValue","I",dt,std::nullopt},
+                {"OEXEC","O","exec",std::nullopt},
+                {"VarCopy","O",dt,std::nullopt}
+            };
+        }
+        else if (type == "PrintText") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"Text","I","string",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "Render") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"Frame","O","frame",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "FrameProcess") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"ProcessOp","I","string",std::nullopt},
+                {"FrameToProcess","I","frame",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt},
+                {"Frame","O","frame",std::nullopt}
+            };
+        }
+        else if (type == "ShowtheFrame") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"Frame","I","frame",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "PlaySound") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"Path","I","string",std::nullopt},
+                {"shouldLoop","I","bool",std::nullopt},
+                {"Volume","I","float",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "StopSound") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"Path","I","string",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "SetTransform") {
+            pins = {
+                {"IEXEC","I","exec",std::nullopt},
+                {"Location_x","I","float",std::nullopt},
+                {"Location_y","I","float",std::nullopt},
+                {"Location_z","I","int",std::nullopt},
+                {"Rotation","I","float",std::nullopt},
+                {"Scale_x","I","float",std::nullopt},
+                {"Scale_y","I","float",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "Exit") {
+            pins = { {"IEXEC","I","exec",std::nullopt} };
+        }
+        else if (type == "BeginPlay") {
+            pins = { {"OEXEC","O","exec",std::nullopt} };
+        }
+        else if (type == "Play_per_N_ms") {
+            pins = {
+                {"Time","I","int",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "Play_when_N_push_down") {
+            pins = {
+                {"Btn","I","string",std::nullopt},
+                {"OEXEC","O","exec",std::nullopt}
+            };
+        }
+        else if (type == "Play_when_triggered") {
+            pins = { {"OEXEC","O","exec",std::nullopt} };
+        }
+        return pins;
+        };
+
+    auto getExecOutputs = [](const Node& node) -> std::vector<std::string> {
+        std::vector<std::string> outs;
+        for (const auto& p : node.pins)
+            if (p.io == "O" && p.type == "exec")
+                outs.push_back(p.name);
+        return outs;
+        };
+
+    auto printNodeSummary = [&](const Node& node) {
+        std::cout << "  Node ID   : " << node.id << "\n";
+        std::cout << "  Node Type : " << node.type << "\n";
+        std::cout << "  Pins      :\n";
+        for (const auto& p : node.pins) {
+            std::cout << "    " << p.name << " (" << p.io << ", " << p.type << ")";
+            if (p.literal.has_value())
+                std::cout << " = \"" << p.literal.value() << "\"";
+            std::cout << "\n";
+        }
+        if (!node.properties.empty()) {
+            std::cout << "  Properties:\n";
+            for (const auto& kv : node.properties)
+                std::cout << "    " << kv.first << " : " << kv.second << "\n";
+        }
+        };
+
+    // ======================== 0. 判断蓝图是否为空 ========================
+    BlueprintData temp = currentBPData;
+    bool isEmpty = temp.nodes.empty();
+
+    // ======================== 1. 选择操作模式 ========================
+    enum class EditMode { EntryNode, InsertNormal };
+    EditMode mode;
+
+    if (isEmpty) {
+        ClearScreen();
+        std::cout << "Blueprint is empty. You must create an entry node first.\n";
+        std::cout << "Press Enter to continue...";
+        std::cin.get();
+        mode = EditMode::EntryNode;
+    }
+    else {
+        while (true) {
+            ClearScreen();
+            printBold("Choose operation:\n\n");
+            std::cout << "  [E]  Create a new entry node (BeginPlay, Play_per_N_ms, ...)\n";
+            std::cout << "  [I]  Insert a normal node after a selected node\n";
+            std::cout << "\nEnter your choice or \"#esc#\" to cancel: > ";
+            std::string line = readLine();
+            if (isEsc(line)) return false;
+            if (!line.empty()) {
+                char ch = (char)tolower((unsigned char)line[0]);
+                if (ch == 'e') { mode = EditMode::EntryNode; break; }
+                else if (ch == 'i') { mode = EditMode::InsertNormal; break; }
+            }
+        }
+    }
+
+    int targetNodeId = -1;
+    const Node* targetNode = nullptr;
+
+    // ======================== 2. 插入普通节点时选择目标 ========================
+    if (mode == EditMode::InsertNormal) {
+        while (true) {
+            ClearScreen();
+            printBold("Insert a new node after selection.\n\n");
+            std::cout << "  1 - Node ID " << selectedNodeId1 << " (Selection 1)\n";
+            std::cout << "  2 - Node ID " << selectedNodeId2 << " (Selection 2)\n";
+            std::cout << "\nEnter number or \"#esc#\" to cancel: > ";
+            std::string line = readLine();
+            if (isEsc(line)) return false;
+            if (line == "1") { targetNodeId = selectedNodeId1; break; }
+            else if (line == "2") { targetNodeId = selectedNodeId2; break; }
+        }
+        for (const auto& n : temp.nodes)
+            if (n.id == targetNodeId) { targetNode = &n; break; }
+        if (!targetNode) {
+            std::cout << "Target node not found. Press Enter...\n";
+            std::cin.get();
+            return false;
+        }
+    }
+
+    // ======================== 3. 选择节点类型 ========================
+    static const std::vector<std::string> nodeTypes = {
+        "Add","Sub","Mul","Div",
+        "GreaterThan","LessThan","GreaterThanOrEqualTo","LessThanOrEqualTo","EqualTo","NotEqualTo",
+        "if","while","break","continue",
+        "GetVariable","SetVariable","PrintText",
+        "Render","FrameProcess","ShowtheFrame",
+        "PlaySound","StopSound","SetTransform","Exit",
+        "BeginPlay","Play_per_N_ms","Play_when_N_push_down","Play_when_triggered"
+    };
+
+    int chosenIdx = -1;
+    while (true) {
+        ClearScreen();
+        printBold("Select node type to insert:\n\n");
+        int half = (int)nodeTypes.size() / 2 + (int)nodeTypes.size() % 2;
+        for (int i = 0; i < half; ++i) {
+            int left = i, right = i + half;
+            std::ostringstream leftStr, rightStr;
+            leftStr << " " << std::setw(2) << (left + 1) << ". " << nodeTypes[left];
+            if (right < (int)nodeTypes.size())
+                rightStr << " " << std::setw(2) << (right + 1) << ". " << nodeTypes[right];
+            std::cout << leftStr.str() << std::string(30 - leftStr.str().size(), ' ') << rightStr.str() << "\n";
+        }
+        std::cout << "\nEnter number or \"#esc#\": > ";
+        std::string line = readLine();
+        if (isEsc(line)) return false;
+        try {
+            int idx = std::stoi(line) - 1;
+            if (idx >= 0 && idx < (int)nodeTypes.size()) {
+                chosenIdx = idx;
+                break;
+            }
+        }
+        catch (...) {}
+    }
+    std::string newNodeType = nodeTypes[chosenIdx];
+
+    // ---------- 禁止在普通插入模式下使用入口节点 ----------
+    bool isEntryNode = (newNodeType == "BeginPlay" || newNodeType == "Play_per_N_ms" ||
+        newNodeType == "Play_when_N_push_down" || newNodeType == "Play_when_triggered");
+    if (mode == EditMode::InsertNormal && isEntryNode) {
+        ClearScreen();
+        std::cout << "Entry nodes cannot be inserted into the middle of an execution flow.\n";
+        std::cout << "Use entry node creation mode instead.\nPress Enter...\n";
+        std::cin.get();
+        return false;
+    }
+
+    // 入口模式兼容性检查
+    if (mode == EditMode::EntryNode && !isEntryNode) {
+        std::cout << "Error: Non-entry node type selected in entry mode. Press Enter...\n";
+        std::cin.get();
+        return false;
+    }
+
+    // ======================== 4. 新建节点并收集信息 ========================
+    Node newNode;
+    newNode.id = getMaxId(temp.nodes) + 1;
+    newNode.type = newNodeType;
+
+    std::string dataType;
+    int varIndex = -1;
+
+    // --------------------- 数据类型选择 ---------------------
+    if (newNodeType == "Add" || newNodeType == "Sub" || newNodeType == "Mul" || newNodeType == "Div") {
+        ClearScreen();
+        printBold("Select data type for " + newNodeType + ":\n\n");
+        std::vector<std::string> dtypes = { "int","float","string","bool" };
+        for (size_t i = 0; i < dtypes.size(); ++i)
+            std::cout << "  " << i + 1 << " - " << dtypes[i] << "\n";
+        std::cout << "> ";
+        std::string line = readLine();
+        if (isEsc(line)) return false;
+        try {
+            int di = std::stoi(line) - 1;
+            if (di >= 0 && di < 4) dataType = dtypes[di];
+        }
+        catch (...) {}
+        if (dataType.empty()) { std::cout << "Invalid. Press Enter...\n"; std::cin.get(); return false; }
+    }
+    else if (newNodeType == "GreaterThan" || newNodeType == "LessThan" || newNodeType == "GreaterThanOrEqualTo" ||
+        newNodeType == "LessThanOrEqualTo" || newNodeType == "EqualTo" || newNodeType == "NotEqualTo") {
+        ClearScreen();
+        printBold("Select data type for comparison:\n\n");
+        std::vector<std::string> dtypes = { "int","float" };
+        for (size_t i = 0; i < dtypes.size(); ++i)
+            std::cout << "  " << i + 1 << " - " << dtypes[i] << "\n";
+        std::cout << "> ";
+        std::string line = readLine();
+        if (isEsc(line)) return false;
+        try {
+            int di = std::stoi(line) - 1;
+            if (di >= 0 && di < 2) dataType = dtypes[di];
+        }
+        catch (...) {}
+        if (dataType.empty()) { std::cout << "Invalid. Press Enter...\n"; std::cin.get(); return false; }
+    }
+    else if (newNodeType == "GetVariable" || newNodeType == "SetVariable") {
+        if (temp.variables.empty()) {
+            ClearScreen();
+            std::cout << "No variables defined in this blueprint.\n";
+            std::cout << "Cannot create " << newNodeType << " node.\nPress Enter...\n";
+            std::cin.get();
+            return false;
+        }
+        while (true) {
+            ClearScreen();
+            printBold("Select an existing variable for " + newNodeType + ":\n\n");
+            for (size_t i = 0; i < temp.variables.size(); ++i)
+                std::cout << " " << i + 1 << " - " << temp.variables[i].name
+                << " (" << temp.variables[i].type << ")\n";
+            std::cout << "\nEnter number or \"#esc#\": > ";
+            std::string line = readLine();
+            if (isEsc(line)) return false;
+            try {
+                int idx = std::stoi(line) - 1;
+                if (idx >= 0 && idx < (int)temp.variables.size()) {
+                    varIndex = idx;
+                    dataType = temp.variables[varIndex].type;
+                    break;
+                }
+            }
+            catch (...) {}
+        }
+    }
+
+    newNode.pins = getTemplatePins(newNodeType, dataType);
+
+    // 自动设置变量引用字面值
+    if (newNodeType == "GetVariable" || newNodeType == "SetVariable") {
+        std::string varName = temp.variables[varIndex].name;
+        for (auto& pin : newNode.pins) {
+            if (newNodeType == "GetVariable" && pin.name == "VarToGet")
+                pin.literal = varName;
+            else if (newNodeType == "SetVariable" && pin.name == "VarToSet")
+                pin.literal = varName;
+        }
+    }
+
+    // --------------------- 字面值输入 ---------------------
+    for (auto& pin : newNode.pins) {
+        if (pin.io != "I" || pin.type == "exec" || pin.type == "frame")
+            continue;
+        if ((newNodeType == "GetVariable" && pin.name == "VarToGet") ||
+            (newNodeType == "SetVariable" && pin.name == "VarToSet"))
+            continue;
+
+        bool required = false;
+        if (newNodeType == "Play_per_N_ms" && pin.name == "Time")
+            required = true;
+        else if (newNodeType == "Play_when_N_push_down" && pin.name == "Btn")
+            required = true;
+        else if (newNodeType == "FrameProcess" && pin.name == "ProcessOp")
+            required = true;
+
+        while (true) {
+            ClearScreen();
+            std::cout << "Pin: " << pin.name << " (type: " << pin.type << ")";
+            if (required) std::cout << " [REQUIRED]";
+            std::cout << "\nEnter literal value or press Enter to skip (\"#esc#\" to cancel):\n> ";
+            std::string val = readLine();
+            if (isEsc(val)) return false;
+            if (!val.empty()) {
+                pin.literal = val;
+                break;
+            }
+            else {
+                if (required) {
+                    std::cout << "This pin requires a literal. Try again.\n";
+                    std::cin.get();
+                    continue;
+                }
+                pin.literal = std::nullopt;
+                break;
+            }
+        }
+    }
+
+    // --------------------- Render 高级属性 ---------------------
+    if (newNodeType == "Render") {
+        while (true) {
+            ClearScreen();
+            std::cout << "Configure advanced settings for Render?\n\n";
+            std::cout << "Skip? (Y/N) Enter #esc# to cancel.\n> ";
+            std::string ans = readLine();
+            if (isEsc(ans)) return false;
+            auto toLower = [](std::string s) {
+                for (auto& c : s) c = (char)tolower((unsigned char)c);
+                return s;
+                };
+            ans = toLower(ans);
+            if (ans == "y" || ans == "yes") {
+                struct PropEntry {
+                    std::string key;
+                    std::string desc;
+                    std::vector<std::string> validValues;
+                };
+                std::vector<PropEntry> renderProps = {
+                    {"MSAA", "Anti-aliasing sample count (1,2,3,4)", {"1","2","3","4"}},
+                    {"samplingMethod", "Texture sampling method (NEAREST, BILINEAR, BICUBIC, ANISOTROPIC)",
+                     {"NEAREST","BILINEAR","BICUBIC","ANISOTROPIC"}},
+                    {"anisoLevel", "Anisotropic filter level (1-16, only for ANISOTROPIC)", {}}
+                };
+                std::set<int> chosenProps;
+                while (true) {
+                    ClearScreen();
+                    std::cout << "Available advanced settings for Render:\n";
+                    for (size_t i = 0; i < renderProps.size(); ++i)
+                        std::cout << " " << i + 1 << ". " << renderProps[i].key << " - " << renderProps[i].desc << "\n";
+                    std::cout << "\nEnter comma-separated numbers (e.g. 1,3) or 'all' to add all, or press Enter to skip: > ";
+                    std::string sel = readLine();
+                    if (isEsc(sel)) return false;
+                    if (sel.empty()) break;
+                    sel = toLower(sel);
+                    if (sel == "all") {
+                        for (int i = 0; i < (int)renderProps.size(); ++i) chosenProps.insert(i);
+                        break;
+                    }
+                    std::istringstream iss(sel);
+                    std::string token;
+                    bool valid = true;
+                    while (std::getline(iss, token, ',')) {
+                        try {
+                            int num = std::stoi(token) - 1;
+                            if (num >= 0 && num < (int)renderProps.size())
+                                chosenProps.insert(num);
+                            else { valid = false; break; }
+                        }
+                        catch (...) { valid = false; break; }
+                    }
+                    if (valid && !chosenProps.empty()) break;
+                    std::cout << "Invalid selection. Try again.\n";
+                    std::cin.get();
+                }
+                for (int idx : chosenProps) {
+                    const PropEntry& entry = renderProps[idx];
+                    while (true) {
+                        ClearScreen();
+                        std::cout << "Setting: " << entry.key << "\n";
+                        std::cout << entry.desc << "\n";
+                        if (!entry.validValues.empty()) {
+                            std::cout << "Valid values: ";
+                            for (size_t i = 0; i < entry.validValues.size(); ++i) {
+                                if (i) std::cout << ", ";
+                                std::cout << entry.validValues[i];
+                            }
+                            std::cout << "\n";
+                        }
+                        std::cout << "Enter value (or press Enter to skip this setting): > ";
+                        std::string val = readLine();
+                        if (isEsc(val)) return false;
+                        if (val.empty()) break;
+                        if (!entry.validValues.empty()) {
+                            bool match = false;
+                            for (const auto& v : entry.validValues) {
+                                if (val == v) { match = true; break; }
+                            }
+                            if (!match) {
+                                std::cout << "Invalid value. Must be one of the listed options.\n";
+                                std::cin.get();
+                                continue;
+                            }
+                        }
+                        else {
+                            try {
+                                int lvl = std::stoi(val);
+                                if (lvl < 1 || lvl > 16) {
+                                    std::cout << "Value must be between 1 and 16.\n";
+                                    std::cin.get();
+                                    continue;
+                                }
+                            }
+                            catch (...) {
+                                std::cout << "Invalid integer.\n";
+                                std::cin.get();
+                                continue;
+                            }
+                        }
+                        newNode.properties[entry.key] = val;
+                        break;
+                    }
+                }
+                break;
+            }
+            else if (ans == "n" || ans == "no") {
+                break;
+            }
+        }
+    }
+    // --------------------- FrameProcess 高级属性 ---------------------
+    else if (newNodeType == "FrameProcess") {
+        struct PostEffect {
+            std::string key;
+            std::string desc;
+            std::string defaultVal;
+            std::vector<std::string> paramTypes;
+            std::vector<std::string> paramDescs;
+        };
+        std::vector<PostEffect> effects = {
+            {"Bloom", "Bloom effect: threshold intensity blurRadius sigma",
+             "220.0f,0.8f,4,-1.0f",
+             {"float","float","int","float"},
+             {"threshold(0-255)","intensity(0-2)","blurRadius(px)","sigma"}},
+            {"FXAA", "FXAA anti-aliasing: edgeThreshold edgeThresholdMin spanMax reduceMul reduceMin",
+             "0.166f,0.05f,8.0f,0.125f,0.0078f",
+             {"float","float","float","float","float"},
+             {"edgeThreshold","edgeThresholdMin","spanMax","reduceMul","reduceMin"}},
+            {"SMAA", "SMAA anti-aliasing: edgeThreshold maxSearchSteps enableDiag",
+             "0.05f,4,true",
+             {"float","int","bool"},
+             {"edgeThreshold","maxSearchSteps","enableDiag(true/false)"}},
+            {"LensDistortion", "Lens distortion: strength centerX centerY",
+             "0.0f,0.5f,0.5f",
+             {"float","float","float"},
+             {"strength(-0.3~0.3)","centerX","centerY"}},
+            {"ChromaticAberration", "Chromatic aberration: strength mode centerX centerY",
+             "2.0f,0,0.5f,0.5f",
+             {"float","int","float","float"},
+             {"strength(px)","mode(0=radial,1=horizontal)","centerX","centerY"}},
+            {"Blur", "Gaussian blur: radius sigma direction",
+             "3.0f,-1.0f,0",
+             {"float","float","int"},
+             {"radius(px)","sigma","direction(0=2D,1=H,2=V)"}},
+            {"Sharpen", "Unsharp mask: strength radius sigma",
+             "0.5f,2,-1.0f",
+             {"float","int","float"},
+             {"strength","radius","sigma"}},
+            {"FilmGrain", "Film grain: intensity grainSize dynamic frameId",
+             "0.05f,1,true,0",
+             {"float","int","bool","int"},
+             {"intensity","grainSize","dynamic(true/false)","frameId"}},
+            {"Vignette", "Vignette: intensity innerRadius outerRadius centerX centerY exponent",
+             "0.3f,0.6f,1.0f,0.5f,0.5f,1.0f",
+             {"float","float","float","float","float","float"},
+             {"intensity","innerRadius","outerRadius","centerX","centerY","exponent"}},
+            {"ColorCorrection", "Color correction: brightness contrast saturation wR wG wB hueShift",
+             "0.0f,1.0f,1.0f,1.0f,1.0f,1.0f,0.0f",
+             {"float","float","float","float","float","float","float"},
+             {"brightness","contrast","saturation","whiteR","whiteG","whiteB","hueShift(deg)"}},
+            {"ColorGrading", "Color grading: style intensity customR customG customB",
+             "0,0.8f,1.0f,1.0f,1.0f",
+             {"int","float","float","float","float"},
+             {"style(0-5)","intensity","customR","customG","customB"}}
+        };
+
+        while (true) {
+            ClearScreen();
+            std::cout << "Configure post‑processing settings for FrameProcess?\n\n";
+            std::cout << "Skip? (Y/N) If skipped, no effects will be added. Enter #esc# to cancel.\n> ";
+            std::string ans = readLine();
+            if (isEsc(ans)) return false;
+            auto toLower = [](std::string s) {
+                for (auto& c : s) c = (char)tolower((unsigned char)c);
+                return s;
+                };
+            ans = toLower(ans);
+            if (ans == "y" || ans == "yes") {
+                std::set<int> chosenEffects;
+                while (true) {
+                    ClearScreen();
+                    std::cout << "Available post‑processing effects:\n";
+                    for (size_t i = 0; i < effects.size(); ++i)
+                        std::cout << " " << i + 1 << ". " << effects[i].key << " - " << effects[i].desc << "\n";
+                    std::cout << "\nEnter comma-separated numbers or 'all' to add all, or press Enter to skip: > ";
+                    std::string sel = readLine();
+                    if (isEsc(sel)) return false;
+                    if (sel.empty()) break;
+                    sel = toLower(sel);
+                    if (sel == "all") {
+                        for (int i = 0; i < (int)effects.size(); ++i) chosenEffects.insert(i);
+                        break;
+                    }
+                    std::istringstream iss(sel);
+                    std::string token;
+                    bool valid = true;
+                    while (std::getline(iss, token, ',')) {
+                        try {
+                            int num = std::stoi(token) - 1;
+                            if (num >= 0 && num < (int)effects.size())
+                                chosenEffects.insert(num);
+                            else { valid = false; break; }
+                        }
+                        catch (...) { valid = false; break; }
+                    }
+                    if (valid && !chosenEffects.empty()) break;
+                    std::cout << "Invalid selection. Try again.\n";
+                    std::cin.get();
+                }
+                // 修正后的逻辑：跳过时不设置任何属性，只设置用户选择的效果
+                for (int idx : chosenEffects) {
+                    const PostEffect& fx = effects[idx];
+                    while (true) {
+                        ClearScreen();
+                        std::cout << "Effect: " << fx.key << "\n";
+                        std::cout << "Parameters: ";
+                        for (size_t i = 0; i < fx.paramTypes.size(); ++i) {
+                            if (i) std::cout << ", ";
+                            std::cout << fx.paramDescs[i] << "(" << fx.paramTypes[i] << ")";
+                        }
+                        std::cout << "\n";
+                        std::cout << "Default: " << fx.defaultVal << "\n";
+                        std::cout << "Enter comma-separated values (floats must end with 'f', e.g. 0.5f),";
+                        std::cout << " or press Enter to use default: > ";
+                        std::string input = readLine();
+                        if (isEsc(input)) return false;
+                        if (input.empty()) {
+                            newNode.properties[fx.key] = fx.defaultVal;
+                            break;
+                        }
+                        std::vector<std::string> parts;
+                        std::istringstream iss(input);
+                        std::string part;
+                        while (std::getline(iss, part, ',')) {
+                            size_t start = part.find_first_not_of(" \t");
+                            size_t end = part.find_last_not_of(" \t");
+                            if (start == std::string::npos)
+                                parts.push_back("");
+                            else
+                                parts.push_back(part.substr(start, end - start + 1));
+                        }
+                        if (parts.size() != fx.paramTypes.size()) {
+                            std::cout << "Expected " << fx.paramTypes.size() << " values, got " << parts.size() << ". Try again.\n";
+                            std::cin.get();
+                            continue;
+                        }
+                        bool ok = true;
+                        for (size_t pi = 0; pi < parts.size(); ++pi) {
+                            const std::string& p = parts[pi];
+                            const std::string& type = fx.paramTypes[pi];
+                            if (type == "float") {
+                                if (p.size() < 2 || p.back() != 'f') {
+                                    ok = false;
+                                    std::cout << "Parameter " << (pi + 1) << " must be a float ending with 'f'.\n";
+                                    break;
+                                }
+                                try { std::stof(p.substr(0, p.size() - 1)); }
+                                catch (...) {
+                                    ok = false;
+                                    std::cout << "Parameter " << (pi + 1) << " is not a valid float.\n";
+                                    break;
+                                }
+                            }
+                            else if (type == "int") {
+                                try { std::stoi(p); }
+                                catch (...) {
+                                    ok = false;
+                                    std::cout << "Parameter " << (pi + 1) << " must be an integer.\n";
+                                    break;
+                                }
+                            }
+                            else if (type == "bool") {
+                                std::string low = toLower(p);
+                                if (low != "true" && low != "false") {
+                                    ok = false;
+                                    std::cout << "Parameter " << (pi + 1) << " must be 'true' or 'false'.\n";
+                                    break;
+                                }
+                            }
+                        }
+                        if (!ok) { std::cin.get(); continue; }
+                        std::string valueStr;
+                        for (size_t pi = 0; pi < parts.size(); ++pi) {
+                            if (pi) valueStr += ",";
+                            valueStr += parts[pi];
+                        }
+                        newNode.properties[fx.key] = valueStr;
+                        break;
+                    }
+                }
+                break;
+            }
+            else if (ans == "n" || ans == "no") {
+                // 用户选择跳过，不设置任何效果属性
+                break;
+            }
+        }
+    }
+
+    // ======================== 入口节点重复检查 ========================
+    if (isEntryNode) {
+        bool duplicate = false;
+        if (newNodeType == "BeginPlay") {
+            for (const auto& node : temp.nodes) {
+                if (node.type == "BeginPlay") {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (duplicate) {
+                ClearScreen();
+                std::cout << "Error: A BeginPlay entry node already exists.\n";
+                std::cout << "Only one BeginPlay is allowed.\nPress Enter...\n";
+                std::cin.get();
+                return false;
+            }
+        }
+        else if (newNodeType == "Play_when_triggered") {
+            for (const auto& node : temp.nodes) {
+                if (node.type == "Play_when_triggered") {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (duplicate) {
+                ClearScreen();
+                std::cout << "Error: A Play_when_triggered entry node already exists.\n";
+                std::cout << "Only one Play_when_triggered is allowed.\nPress Enter...\n";
+                std::cin.get();
+                return false;
+            }
+        }
+        else if (newNodeType == "Play_per_N_ms") {
+            // 检查是否有相同 Time 字面值
+            std::string newTimeLit;
+            for (const auto& pin : newNode.pins) {
+                if (pin.name == "Time" && pin.literal.has_value()) {
+                    newTimeLit = pin.literal.value();
+                    break;
+                }
+            }
+            for (const auto& node : temp.nodes) {
+                if (node.type == "Play_per_N_ms") {
+                    for (const auto& pin : node.pins) {
+                        if (pin.name == "Time" && pin.literal.has_value() && pin.literal.value() == newTimeLit) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                }
+                if (duplicate) break;
+            }
+            if (duplicate) {
+                ClearScreen();
+                std::cout << "Error: A Play_per_N_ms entry node with Time = " << newTimeLit << " already exists.\n";
+                std::cout << "Please choose a different interval.\nPress Enter...\n";
+                std::cin.get();
+                return false;
+            }
+        }
+        else if (newNodeType == "Play_when_N_push_down") {
+            // 检查是否有相同 Btn 字面值
+            std::string newBtnLit;
+            for (const auto& pin : newNode.pins) {
+                if (pin.name == "Btn" && pin.literal.has_value()) {
+                    newBtnLit = pin.literal.value();
+                    break;
+                }
+            }
+            for (const auto& node : temp.nodes) {
+                if (node.type == "Play_when_N_push_down") {
+                    for (const auto& pin : node.pins) {
+                        if (pin.name == "Btn" && pin.literal.has_value() && pin.literal.value() == newBtnLit) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                }
+                if (duplicate) break;
+            }
+            if (duplicate) {
+                ClearScreen();
+                std::cout << "Error: A Play_when_N_push_down entry node with Btn = " << newBtnLit << " already exists.\n";
+                std::cout << "Please choose a different button.\nPress Enter...\n";
+                std::cin.get();
+                return false;
+            }
+        }
+    }
+
+    // ======================== 5. 执行流连接 ========================
+    if (isEntryNode) {
+        ClearScreen();
+        printBold("New entry node:\n\n");
+        printNodeSummary(newNode);
+        std::cout << "\nAdd this entry node? (Y/N) > ";
+        std::string confirm = readLine();
+        if (isEsc(confirm) || (confirm != "Y" && confirm != "y")) return false;
+        temp.nodes.push_back(newNode);
+        WriteBPData(WideToUTF8(currentBPPath), temp);
+        return true;
+    }
+
+    // ---------- 普通插入 ----------
+    auto execOutputs = getExecOutputs(*targetNode);
+    if (execOutputs.empty()) {
+        ClearScreen();
+        std::cout << "Target node has no exec output. Cannot insert.\nPress Enter...\n";
+        std::cin.get();
+        return false;
+    }
+
+    std::string chosenSrcPin;
+    if (execOutputs.size() == 1) {
+        chosenSrcPin = execOutputs[0];
+    }
+    else {
+        while (true) {
+            ClearScreen();
+            printBold("Choose which exec output of node " + std::to_string(targetNodeId) + " to break:\n\n");
+            for (size_t i = 0; i < execOutputs.size(); ++i)
+                std::cout << "  " << i + 1 << " - " << execOutputs[i] << "\n";
+            std::cout << "> ";
+            std::string line = readLine();
+            if (isEsc(line)) return false;
+            try {
+                int idx = std::stoi(line) - 1;
+                if (idx >= 0 && idx < (int)execOutputs.size()) {
+                    chosenSrcPin = execOutputs[idx];
+                    break;
+                }
+            }
+            catch (...) {}
+        }
+    }
+
+    // 收集该引脚所有下游
+    std::vector<int> originalNextIds;
+    for (auto it = temp.links.begin(); it != temp.links.end(); ) {
+        if (it->sourceNode == targetNodeId && it->sourcePin == chosenSrcPin) {
+            originalNextIds.push_back(it->targetNode);
+            it = temp.links.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    // 多后继保护
+    if (originalNextIds.size() > 1) {
+        ClearScreen();
+        std::cout << "ERROR: Target pin has " << originalNextIds.size() << " downstream nodes.\n";
+        std::cout << "Inserting a node here would break the execution flow.\n";
+        std::cout << "Please disconnect some links before inserting.\n";
+        std::cout << "Press Enter to continue...\n";
+        std::cin.get();
+        return false;
+    }
+
+    int originalNext = originalNextIds.empty() ? -1 : originalNextIds[0];
+    bool hasSuccessor = (originalNext != -1);
+
+    auto newNodeExecOuts = getExecOutputs(newNode);
+    std::string chosenNewOut;
+
+    if (hasSuccessor && newNodeExecOuts.empty()) {
+        ClearScreen();
+        std::cout << "New node has no exec output pin.\n";
+        std::cout << "The connection to node " << originalNext << " will be lost.\n";
+        std::cout << "Continue? (Y/N) > ";
+        std::string confirm = readLine();
+        if (isEsc(confirm) || (confirm != "Y" && confirm != "y")) return false;
+    }
+    else if (hasSuccessor && newNodeExecOuts.size() == 1) {
+        chosenNewOut = newNodeExecOuts[0];
+    }
+    else if (hasSuccessor && newNodeExecOuts.size() > 1) {
+        while (true) {
+            ClearScreen();
+            printBold("Select new node's exec output to connect to the rest of the flow:\n\n");
+            for (size_t i = 0; i < newNodeExecOuts.size(); ++i)
+                std::cout << "  " << i + 1 << " - " << newNodeExecOuts[i] << "\n";
+            std::cout << "> ";
+            std::string line = readLine();
+            if (isEsc(line)) return false;
+            try {
+                int idx = std::stoi(line) - 1;
+                if (idx >= 0 && idx < (int)newNodeExecOuts.size()) {
+                    chosenNewOut = newNodeExecOuts[idx];
+                    break;
+                }
+            }
+            catch (...) {}
+        }
+    }
+
+    Link link1;
+    link1.sourceNode = targetNodeId;
+    link1.sourcePin = chosenSrcPin;
+    link1.targetNode = newNode.id;
+    link1.targetPin = "IEXEC";
+    temp.links.push_back(link1);
+
+    if (hasSuccessor && !chosenNewOut.empty()) {
+        Link link2;
+        link2.sourceNode = newNode.id;
+        link2.sourcePin = chosenNewOut;
+        link2.targetNode = originalNext;
+        link2.targetPin = "IEXEC";
+        temp.links.push_back(link2);
+    }
+
+    // ======================== 6. 确认并保存 ========================
+    ClearScreen();
+    printBold("Inserting new node:\n\n");
+    printNodeSummary(newNode);
+    std::cout << "\nBreaks link from node " << targetNodeId << " (" << targetNode->type
+        << ") pin " << chosenSrcPin;
+    if (originalNext != -1)
+        std::cout << " to node " << originalNext;
+    else
+        std::cout << " (no successor)";
+    std::cout << "\nNew connection: " << targetNodeId << " -> " << newNode.id;
+    if (!chosenNewOut.empty())
+        std::cout << " -> " << originalNext;
+    std::cout << "\n\nConfirm? (Y/N) > ";
+    std::string confirm = readLine();
+    if (isEsc(confirm) || (confirm != "Y" && confirm != "y")) return false;
+
+    temp.nodes.push_back(newNode);
+    WriteBPData(WideToUTF8(currentBPPath), temp);
+    return true;
 }
 
 std::vector<int> BlueprintViewer::GetEntryNodeIds() const {

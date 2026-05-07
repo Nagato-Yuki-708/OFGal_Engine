@@ -123,7 +123,7 @@ struct ObjectData {
 };
 
 // 场景结构
-struct LevelData {
+struct LevelData {\
 	std::string name;                                    // 场景名（JSON顶层键）
 	std::map<std::string, ObjectData*> objects; // 对象名 -> 对象数据
 };
