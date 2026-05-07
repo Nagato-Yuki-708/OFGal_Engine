@@ -232,26 +232,3 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
 			if (link.targetPin == "Location.z") st->in_loc_z = out;
 		}
 	}
-}void BlueprintCompiler::Run() {
-	for (auto* entry : currentCompiled->entryNodes) {
-		ExecutionContext ctx;
-		for (auto& var : currentBlueprint.variables) {   //这里进行变量表的绑定
-			Value v;
-			if (var.type == "int") {
-				v = Value::makeInt(std::stoi(var.value));
-			}
-			else if (var.type == "float") {
-				v = Value::makeFloat(std::stof(var.value));
-			}
-			else if (var.type == "bool") {
-				v = Value::makeBool(var.value == "true");
-			}
-			else if (var.type == "string") {
-				v = Value::makeString(var.value);
-			}
-			ctx.variables[var.name] = v;
-		}
-		ctx.current = entry;
-		RunVM(ctx);
-	}
-}
