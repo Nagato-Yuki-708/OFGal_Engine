@@ -111,6 +111,9 @@
     <ClCompile Include="BlueprintCompiler.cpp">
       <Filter>Source Files\GameVM</Filter>
     </ClCompile>
+    <ClCompile Include="BlueprintScheduler.cpp">
+      <Filter>Source Files\GameVM</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -174,6 +177,9 @@
       <Filter>Header Files\GameVM</Filter>
     </ClInclude>
     <ClInclude Include="CompiledBlueprint.h">
+      <Filter>Header Files\GameVM</Filter>
+    </ClInclude>
+    <ClInclude Include="BlueprintScheduler.h">
       <Filter>Header Files\GameVM</Filter>
     </ClInclude>
   </ItemGroup>

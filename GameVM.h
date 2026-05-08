@@ -8,6 +8,7 @@
 #include"InputCollector.h"
 #include "InputSystem.h"
 #include "InputEvent.h"
+#include <chrono>
 #include <unordered_map>
 
 // ============================================================
@@ -15,16 +16,23 @@
 // ============================================================
 class NODE;  // ExecutionContext 需要 NODE* 成员
 
-// ============================================================
 // 执行上下文（必须在 NODE 之前定义，因为 NODE::func_for_VM 需要 ExecutionContext 完整类型）
-// ============================================================
+
+
 class ExecutionContext {   //执行引擎,起到一个记录上下文的作用
 public:
 	NODE* current = nullptr;
 	bool running = true;
+	bool paused = false;
 	NODE* lastExecuted = nullptr;  //在调试的时候使用
 	std::unordered_map<std::string, Value> variables;  //蓝图上下文的变量表，GET_VAR/SET_VAR 节点通过这个表读写变量
+	double wakeUpTime = 0.0;    //在delay中使用
+	int vmID = 0;				//VM的ID
+
 };
+
+
+
 
 // ============================================================
 // NODE 基类
@@ -519,30 +527,61 @@ public:
 	// ★ 编译注意：BuildDataLinks 需处理 targetPin=="inFrame"
 };
 
-// ============================================================
-// 执行引擎
-// ============================================================
+// 执行引擎，还有相关的节点
+
+class Delay_Node :public NODE {
+public:
+
+	Value* delaySeconds = nullptr;
+	void func_for_VM(ExecutionContext& ctx) {
+		if (!delaySeconds) return;
+		float sec = 0.0f;
+		
+		if (delaySeconds->type == ValueType::FLOAT)
+			sec = delaySeconds->f;
+
+		if (delaySeconds->type == ValueType::INT) {
+			sec = (float)delaySeconds->f;
+		}
+		ctx.paused = true;
+		ctx.wakeUpTime = GetTimeSeconds() + sec;    //这里是计算VM恢复的时间
+
+	}
+	//GetTimeSeconds这个函数能够获得函数运行了多少秒
+
+};
+
 
 inline void RunVM(ExecutionContext& ctx) {
 	while (ctx.current && ctx.running) {
 		NODE* node = ctx.current;
+		ctx.current = node->nextNode;   //一定要先赋值再进行执行，否则他的值可能会被覆盖
+
 		node->func_for_VM(ctx);
 		if (!node->nextNode) {
 			ctx.running = false;
 		}
-		ctx.current = node->nextNode;
 		ctx.lastExecuted = node;
+
+		//Pause  等待
+
+		if (ctx.paused) {
+			return;
+		}
 	}
 }
+inline double GetTimeSeconds() {  //计算时间函数
+	using namespace std::chrono;
+	static auto start = high_resolution_clock::now();  //让时间点只会初始化一次
+	auto now = high_resolution_clock::now();
+	return duration<double>(now - start).count();  //这里是要进行时间单位的转换
+}
 
-// PlayWhenKeyNode::onInputEvent 定义
-inline void PlayWhenKeyNode::onInputEvent(const InputEvent& e) {
+inline void PlayWhenKeyNode::onInputEvent(const InputEvent& e) {// inline防止重定义。
 	if (e.type == InputType::KeyDown && e.key == targetKey) {
 		ExecutionContext ctx;
 		ctx.current = this->nextNode;
 		RunVM(ctx);
 	}
 }
-//PlayWhenKeyNode::onInputEvent 里调用了 RunVM(ctx)，而 RunVM 的完整定义在所有节点类之后。
-// C++ 要求调用函数时必须能看到完整定义，所以 onInputEvent 的定义必须放在 RunVM 之后
 //头文件里在类体外定义方法必须加 inline，否则多个.cpp include 同一个.h 时会报"多重定义"链接错误。

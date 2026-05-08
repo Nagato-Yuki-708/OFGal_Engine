@@ -19,6 +19,7 @@ CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
 			currentCompiled->entryNodes.push_back(currentCompiled->nodeMap[n.id]);
 		}
 	}
+	return currentCompiled;
 }
 
 NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建各个节点
