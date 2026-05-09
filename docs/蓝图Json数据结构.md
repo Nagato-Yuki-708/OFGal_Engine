@@ -54,7 +54,7 @@ C[节点Node3]-->D[节点Node......]
 {
 	"name" : "my_number",
 	"type" : "int",
-	"value" : 456
+	"value" : "456"
 },
 {
 	"name" : "my_name",
