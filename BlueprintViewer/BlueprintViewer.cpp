@@ -59,6 +59,36 @@ BlueprintViewer::BlueprintViewer() {
         DEBUG_W(L"[BlueprintViewer] CreateEvent VarChanged Failed" << L"\n");
     }
 
+    // ---------- 创建 NodeViewer 移动通知用事件与共享内存 ----------
+    hNodeMoveEvent = CreateEventW(
+        NULL, FALSE, FALSE,
+        L"Global\\OFGal_Engine_BlueprintViewer_NodeViewer_NodeMove");
+    if (!hNodeMoveEvent) {
+        DEBUG_W(L"[BlueprintViewer] CreateEvent NodeMove Failed, error=" << GetLastError() << L"\n");
+    }
+
+    hNodeIdMapping = CreateFileMappingW(
+        INVALID_HANDLE_VALUE,
+        NULL,
+        PAGE_READWRITE,
+        0,
+        sizeof(int) * 2,
+        L"Global\\OFGal_Engine_BlueprintViewer_NodeViewer_NodeId");
+    if (hNodeIdMapping) {
+        pNodeIdSharedMem = static_cast<int*>(
+            MapViewOfFile(hNodeIdMapping, FILE_MAP_WRITE, 0, 0, sizeof(int) * 2));
+        if (!pNodeIdSharedMem) {
+            DEBUG_W(L"[BlueprintViewer] MapViewOfFile NodeId Failed, error=" << GetLastError() << L"\n");
+        }
+        // 初始化值为当前选中节点（可能为 -1）
+        pNodeIdSharedMem[0] = selectedNodeId1;
+        pNodeIdSharedMem[1] = selectedNodeId2;
+    }
+    else {
+        pNodeIdSharedMem = nullptr;
+        DEBUG_W(L"[BlueprintViewer] CreateFileMapping NodeId Failed, error=" << GetLastError() << L"\n");
+    }
+
     // ---------- 按键绑定 ----------
     m_inputSystem.SetGlobalCapture(false);
     m_inputSystem.SetWindowHandle(GetConsoleWindow());
@@ -73,8 +103,28 @@ BlueprintViewer::BlueprintViewer() {
     m_inputCollector.AddBinding({ VK_DELETE,  Modifier::None, KeyCode::Delete, true });
 
     // ---------- 启动子进程 ----------
-    LaunchChildProcess(exePath_NodeViewer);
-    LaunchChildProcess(exePath_VariablesViewer);
+    if (!FindWindowW(NULL, L"OFGal_Engine/NodeViewer"))
+    {
+        LaunchChildProcess(exePath_NodeViewer);
+    }
+    else
+    {
+        if (!hNodeChangedEvent)
+        {
+            SetEvent(hNodeViewerEvent);
+        }
+    }
+    if(!FindWindowW(NULL, L"OFGal_Engine/VariablesViewer"))
+    {
+        LaunchChildProcess(exePath_VariablesViewer);
+    }
+    else
+    {
+        if (!hVarChangedEvent)
+        {
+            SetEvent(hVariablesViewerEvent);
+        }
+    }
 }
 
 BlueprintViewer::~BlueprintViewer() {
@@ -85,6 +135,9 @@ BlueprintViewer::~BlueprintViewer() {
     if (hVariablesViewerEvent) CloseHandle(hVariablesViewerEvent);
     if (hNodeChangedEvent) CloseHandle(hNodeChangedEvent);
     if (hVarChangedEvent) CloseHandle(hVarChangedEvent);
+    if (pNodeIdSharedMem) UnmapViewOfFile(pNodeIdSharedMem);
+    if (hNodeIdMapping)   CloseHandle(hNodeIdMapping);
+    if (hNodeMoveEvent)   CloseHandle(hNodeMoveEvent);
 
     for (HANDLE h : childProcesses) {
         if (h) CloseHandle(h);
@@ -213,6 +266,7 @@ void BlueprintViewer::Run() {
         else if (dwWait == WAIT_OBJECT_0 + 1 ||
             (numEvents == 2 && eventsToWait[0] == hNodeChangedEvent && dwWait == WAIT_OBJECT_0)) {
             DEBUG_W(L"[BlueprintViewer] NodeChanged event signaled\n");
+            SetEvent(hLoadBPEvent);
         }
         else if (dwWait == WAIT_OBJECT_0 + 2 ||
             (numEvents == 2 && eventsToWait[1] == hVarChangedEvent && dwWait == WAIT_OBJECT_0)) {
@@ -234,16 +288,62 @@ void BlueprintViewer::Run() {
         for (const auto& ev : eventsCopy) {
             if (ev.type == InputType::KeyDown) {
                 switch (ev.key) {
-                case KeyCode::W:   MoveSelection1Up(); break;
-                case KeyCode::S:   MoveSelection1Down(); break;
-                case KeyCode::Up:  MoveSelection2Up(); break;
-                case KeyCode::Down:MoveSelection2Down(); break;
-                case KeyCode::A:   MoveToPrevFlow(); break;
-                case KeyCode::D:   MoveToNextFlow(); break;
+                case KeyCode::W:   
+                    MoveSelection1Up(); 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+                    if (hNodeMoveEvent) SetEvent(hNodeMoveEvent);
+                    break;
+                case KeyCode::S:   
+                    MoveSelection1Down(); 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+                    if (hNodeMoveEvent) SetEvent(hNodeMoveEvent);
+                    break;
+                case KeyCode::Up:  
+                    MoveSelection2Up(); 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+                    if (hNodeMoveEvent) SetEvent(hNodeMoveEvent);
+                    break;
+                case KeyCode::Down:
+                    MoveSelection2Down(); 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+                    if (hNodeMoveEvent) SetEvent(hNodeMoveEvent);
+                    break;
+                case KeyCode::A:   
+                    MoveToPrevFlow(); 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+                    if (hNodeMoveEvent) SetEvent(hNodeMoveEvent);
+                    break;
+                case KeyCode::D:   
+                    MoveToNextFlow(); 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+                    if (hNodeMoveEvent) SetEvent(hNodeMoveEvent);
+                    break;
                 case KeyCode::F:
                     isEditing = true;
                     if(Edit())
+                    {
                         SetEvent(hLoadBPEvent);
+                        SetEvent(hNodeViewerEvent);
+                        SetEvent(hVariablesViewerEvent);
+                    }
                     else{
                         ClearScreen();
                         RenderAll();
@@ -253,7 +353,13 @@ void BlueprintViewer::Run() {
                 case KeyCode::Delete:
                     isEditing = true;
                     if(OnDelete())
+                    {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
                         SetEvent(hLoadBPEvent);
+                        SetEvent(hNodeViewerEvent);
+                        SetEvent(hVariablesViewerEvent);
+                    }
                     else {
                         ClearScreen();
                         RenderAll();

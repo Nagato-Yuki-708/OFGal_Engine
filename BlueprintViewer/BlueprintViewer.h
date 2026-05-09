@@ -63,6 +63,11 @@ private:
     // ---- 子进程句柄 ----
     std::vector<HANDLE> childProcesses;
 
+    // ---- 与 NodeViewer 通信（节点移动通知） ----
+    HANDLE hNodeMoveEvent;      // 自动重置事件
+    HANDLE hNodeIdMapping;      // 共享内存文件映射句柄
+    int* pNodeIdSharedMem;    // 共享内存视图指针（指向两个 int）
+
 private:
     void ConfigureConsole();
     void ClearScreen();
