@@ -193,7 +193,7 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 }
 
 
-void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
+void BlueprintCompiler::BuildDataLinks(const  BlueprintData& data) {
 	for (auto& link : data.links) {
 
 		if (link.sourcePin == "exec" || link.sourcePin == "then") {
