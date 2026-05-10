@@ -24,6 +24,7 @@ public:
 	bool running = true;
 	NODE* lastExecuted = nullptr;  //在调试的时候使用
 	std::unordered_map<std::string, Value> variables;  //蓝图上下文的变量表，GET_VAR/SET_VAR 节点通过这个表读写变量
+	ObjectData* selfObject = nullptr;  // 当前执行上下文的对象引用
 };
 
 // ============================================================
@@ -232,18 +233,58 @@ public:
 // 显示节点
 // ============================================================
 
-class PrintText_Node : public NODE {  // 蓝图节点类型："PrintText"
+class PrintText_Node : public NODE {
 public:
 	Value* text = nullptr;
+	ObjectData* obj = nullptr;  // ★ 由编译器绑定
+
 	void func_for_VM(ExecutionContext& ctx) override {
-		if (text && text->type == ValueType::STRING) {
-			// TODO: 查找当前对象的文本框组件，若存在则更新内容
+		// 优先使用 ctx.selfObject，其次使用节点绑定的 obj
+		ObjectData* targetObj = ctx.selfObject ? ctx.selfObject : obj;
+
+		if (!targetObj) {
+			std::cout << "PrintText_Node: No target object\n";
+			return;
 		}
+
+		// 检查对象是否有文本块组件
+		if (!targetObj->Textblock.has_value()) {
+			std::cout << "PrintText_Node: Object has no Textblock component\n";
+			return;
+		}
+
+		// 获取输入文本（支持多类型自动转换）
+		std::string textToPrint;
+		if (text) {
+			switch (text->type) {
+			case ValueType::STRING:
+				textToPrint = text->s;
+				break;
+			case ValueType::INT:
+				textToPrint = std::to_string(text->i);
+				break;
+			case ValueType::FLOAT:
+				textToPrint = std::to_string(text->f);
+				break;
+			case ValueType::BOOL:
+				textToPrint = text->b ? "true" : "false";
+				break;
+			default:
+				textToPrint = "";
+				break;
+			}
+		}
+
+		// 更新文本块内容
+		auto& textblock = targetObj->Textblock.value();
+		textblock.Text.component = textToPrint;
+
+		std::cout << "PrintText_Node: Updated text to: " << textToPrint << "\n";
 	}
-	// ★ 编译注意：
+};
+// ★ 编译注意：
 	//   1. BuildDataLinks 需要处理 targetPin=="text"→text 指针绑定
 	//   2. "当前对象" 的绑定方式未定——可能需要额外输入引脚或节点内存储对象引用
-};
 
 // ============================================================
 // 音频节点（通过 _EventBus 事件总线与 SoundSystem 通信）
@@ -253,19 +294,27 @@ class PlaySound_Node : public NODE {  // 蓝图节点类型："PlaySound"
 public:
 	Value* path = nullptr;
 	Value* loop = nullptr;
+	Value* volume = nullptr;  // ★ 新增：音量参数
+
 	void func_for_VM(ExecutionContext& ctx) override {
 		std::string soundPath = (path && path->type == ValueType::STRING) ? path->s : "";
 		bool shouldLoop       = (loop && loop->type == ValueType::BOOL)   ? loop->b : false;
+		float vol             = (volume && volume->type == ValueType::FLOAT) ? volume->f : 1.0f;
+
+		// 音量限制在 0.0 ~ 1.0 范围
+		if (vol < 0.0f) vol = 0.0f;
+		if (vol > 1.0f) vol = 1.0f;
 
 		if (!soundPath.empty()) {
 			// 通过 _EventBus 发布 PlaySoundEvent，SoundSystem 在构造时已订阅此事件
 			// 回调内执行 SoundSystem::playSound(playEvent.path, playEvent.loop)
 			// SoundSystem::playSound 使用 Windows MCI API 打开设备并播放
 			_EventBus::getInstance().publish_PlaySound(PlaySoundEvent{soundPath, shouldLoop});
+			// TODO: 传递音量参数到 SoundSystem
 		}
 		// 单出口节点，不修改 ctx.current，RunVM 自动走 nextNode
 	}
-	// ★ 编译注意：BuildDataLinks 需处理 targetPin=="path"/"loop"
+	// ★ 编译注意：BuildDataLinks 需处理 targetPin=="path"/"loop"/"Volume"
 };
 
 class PauseSound_Node : public NODE {  // 蓝图节点类型："PauseSound"
@@ -415,8 +464,18 @@ public:
 		}
 
 		// 通过 _EventBus 调用渲染系统
-		Frame f = _EventBus::getInstance().publish_Render_A_Frame(
-			*levelData, method, msaaVal);
+
+		Frame f;
+		if(method != SAMPLING_ANISOTROPIC){
+			f = _EventBus::getInstance().publish_Render_A_Frame(
+				*levelData, method, msaaVal);
+		}
+			
+		else{
+			f = _EventBus::getInstance().publish_Render_A_Frame_ANISOTROPIC(
+				*levelData, SAMPLING_BICUBIC, msaaVal);
+		}
+		
 		outFrame = Value::makeFrame(f);
 
 		// 单出口节点，不修改 ctx.current，RunVM 自动走 nextNode
@@ -432,73 +491,166 @@ public:
 	Value* processName = nullptr;
 	Value* inFrame = nullptr;
 	Value* processParams = nullptr;
+
+	struct BloomParams {
+		float threshold = 220.0f;
+		float intensity = 0.8f;
+		int blurRadius = 4;
+		float sigma = -1.0f;
+	};
+
+	struct BlurParams {
+		int radius = 3;
+		float sigma = -1.0f;
+		int direction = 0;
+	};
+
+	struct FXAAParams {
+		float edgeThreshold = 0.166f;
+		float edgeThresholdMin = 0.05f;
+		float spanMax = 8.0f;
+		float reduceMul = 0.125f;
+		float reduceMin = 0.0078125f;
+	};
+
+	struct SMAAParams {
+		float edgeThreshold = 0.05f;
+		int maxSearchSteps = 4;
+		bool enableDiag = true;
+	};
+
+	struct LensDistortionParams {
+		float strength = 0.0f;
+		float centerX = 0.5f;
+		float centerY = 0.5f;
+	};
+
+	struct ChromaticAberrationParams {
+		float strength = 2.0f;
+		int mode = 0;
+		float centerX = 0.5f;
+		float centerY = 0.5f;
+	};
+
+	struct SharpenParams {
+		float strength = 0.5f;
+		int radius = 2;
+		float sigma = -1.0f;
+	};
+
+	struct FilmGrainParams {
+		float intensity = 0.05f;
+		int grainSize = 1;
+		bool dynamic = true;
+		int frameId = 0;
+	};
+
+	struct VignetteParams {
+		float intensity = 0.3f;
+		float innerRadius = 0.6f;
+		float outerRadius = 1.0f;
+		float centerX = 0.5f;
+		float centerY = 0.5f;
+		float exponent = 1.0f;
+	};
+
+	struct ColorCorrectionParams {
+		float brightness = 0.0f;
+		float contrast = 1.0f;
+		float saturation = 1.0f;
+		float3 whiteBalance = { 1.0f, 1.0f, 1.0f };
+		float hueShift = 0.0f;
+	};
+
+	struct ColorGradingParams {
+		int style = 0;
+		float intensity = 0.8f;
+		float3 customColor = { 1.0f, 1.0f, 1.0f };
+	};
+
+	// 预设参数结构体
+	BloomParams bloom;
+	BlurParams blur;
+	FXAAParams fxaa;
+	SMAAParams smaa;
+	LensDistortionParams lensDistortion;
+	ChromaticAberrationParams chromaticAberration;
+	SharpenParams sharpen;
+	FilmGrainParams filmGrain;
+	VignetteParams vignette;
+	ColorCorrectionParams colorCorrection;
+	ColorGradingParams colorGrading;
+
 	Value outFrame;
+
 	void func_for_VM(ExecutionContext& ctx) override {
-		// 检查输入帧有效性
+		// 1. 检查输入帧有效性
 		if (!inFrame || inFrame->type != ValueType::FRAME) {
-			outFrame = inFrame ? *inFrame : Value();   // 透传或 NONE
+			outFrame = inFrame ? *inFrame : Value();
 			return;
 		}
 
-		// 拷贝帧数据（后处理函数可能就地修改）
+		// 2. 拷贝帧数据
 		Frame f = inFrame->frame;
 		outFrame = Value::makeFrame(f);
 
-		// 读取后处理名称
+		// 3. 读取后处理名称
 		std::string name = (processName && processName->type == ValueType::STRING)
 			? processName->s : "";
 
-		auto& bus = _EventBus::getInstance();
-
-		// ---- 根据名称分发到对应后处理函数 ----
 		if (name == "Bloom") {
-			float threshold = 0.8f, intensity = 0.5f;
-			int blurRadius = 5;
-			float sigma = 1.5f;
-			bus.publish_applyBloom(outFrame.frame, threshold, intensity, blurRadius, sigma);
+			_EventBus::getInstance().publish_applyBloom(
+				outFrame.frame, bloom.threshold, bloom.intensity,
+				bloom.blurRadius, bloom.sigma);
 		}
 		else if (name == "Blur") {
-			int radius = 3; float sigma = 1.0f; int direction = 0;
-			bus.publish_applyBlur(outFrame.frame, radius, sigma, direction);
+			_EventBus::getInstance().publish_applyBlur(
+				outFrame.frame, blur.radius, blur.sigma, blur.direction);
 		}
 		else if (name == "FXAA") {
-			float edgeThreshold = 0.125f, edgeThresholdMin = 0.0625f;
-			float spanMax = 8.0f, reduceMul = 0.125f, reduceMin = 0.0078125f;
-			bus.publish_applyFXAA(outFrame.frame, edgeThreshold, edgeThresholdMin, spanMax, reduceMul, reduceMin);
+			_EventBus::getInstance().publish_applyFXAA(
+				outFrame.frame, fxaa.edgeThreshold, fxaa.edgeThresholdMin,
+				fxaa.spanMax, fxaa.reduceMul, fxaa.reduceMin);
 		}
 		else if (name == "SMAA") {
-			float edgeThreshold = 0.1f; int maxSearchSteps = 8; bool enableDiag = true;
-			bus.publish_applySMAA(outFrame.frame, edgeThreshold, maxSearchSteps, enableDiag);
+			_EventBus::getInstance().publish_applySMAA(
+				outFrame.frame, smaa.edgeThreshold, smaa.maxSearchSteps, smaa.enableDiag);
 		}
 		else if (name == "LensDistortion") {
-			float strength = 0.5f, centerX = 0.5f, centerY = 0.5f;
-			bus.publish_applyLensDistortion(outFrame.frame, strength, centerX, centerY);
+			_EventBus::getInstance().publish_applyLensDistortion(
+				outFrame.frame, lensDistortion.strength,
+				lensDistortion.centerX, lensDistortion.centerY);
 		}
 		else if (name == "ChromaticAberration") {
-			float strength = 0.01f; int mode = 0; float centerX = 0.5f, centerY = 0.5f;
-			bus.publish_applyChromaticAberration(outFrame.frame, strength, mode, centerX, centerY);
+			_EventBus::getInstance().publish_applyChromaticAberration(
+				outFrame.frame, chromaticAberration.strength, chromaticAberration.mode,
+				chromaticAberration.centerX, chromaticAberration.centerY);
 		}
 		else if (name == "Sharpen") {
-			float strength = 0.5f; int radius = 1; float sigma = 1.0f;
-			bus.publish_applySharpen(outFrame.frame, strength, radius, sigma);
+			_EventBus::getInstance().publish_applySharpen(
+				outFrame.frame, sharpen.strength, sharpen.radius, sharpen.sigma);
 		}
 		else if (name == "FilmGrain") {
-			float intensity = 0.05f; int grainSize = 1; bool dynamic = true; int frameId = 0;
-			bus.publish_applyFilmGrain(outFrame.frame, intensity, grainSize, dynamic, frameId);
+			_EventBus::getInstance().publish_applyFilmGrain(
+				outFrame.frame, filmGrain.intensity, filmGrain.grainSize,
+				filmGrain.dynamic, filmGrain.frameId);
 		}
 		else if (name == "Vignette") {
-			float intensity = 0.5f, innerRadius = 0.3f, outerRadius = 0.8f;
-			float centerX = 0.5f, centerY = 0.5f, exponent = 1.0f;
-			bus.publish_applyVignette(outFrame.frame, intensity, innerRadius, outerRadius, centerX, centerY, exponent);
+			_EventBus::getInstance().publish_applyVignette(
+				outFrame.frame, vignette.intensity, vignette.innerRadius,
+				vignette.outerRadius, vignette.centerX, vignette.centerY,
+				vignette.exponent);
 		}
 		else if (name == "ColorCorrection") {
-			float brightness = 0.0f, contrast = 0.0f, saturation = 0.0f;
-			float3 whiteBalance = {1.0f, 1.0f, 1.0f}; float hueShift = 0.0f;
-			bus.publish_applyColorCorrection(outFrame.frame, brightness, contrast, saturation, whiteBalance, hueShift);
+			_EventBus::getInstance().publish_applyColorCorrection(
+				outFrame.frame, colorCorrection.brightness, colorCorrection.contrast,
+				colorCorrection.saturation, colorCorrection.whiteBalance,
+				colorCorrection.hueShift);
 		}
 		else if (name == "ColorGrading") {
-			int style = 0; float intensity = 1.0f; float3 customColor = {1.0f, 1.0f, 1.0f};
-			bus.publish_applyColorGrading(outFrame.frame, style, intensity, customColor);
+			_EventBus::getInstance().publish_applyColorGrading(
+				outFrame.frame, colorGrading.style, colorGrading.intensity,
+				colorGrading.customColor);
 		}
 		// 未知名称 → 透传原始帧（outFrame 已是 inFrame 的拷贝，无需额外操作）
 

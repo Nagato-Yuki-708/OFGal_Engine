@@ -1,5 +1,5 @@
-#pragma once
-// Õâ¸öÍ·ÎÄ¼şÓÃÀ´´æ´¢±àÒëÖ®ºóµÄÀ¶Í¼
+ï»¿#pragma once
+// è¿™ä¸ªå¤´æ–‡ä»¶ç”¨æ¥å­˜å‚¨ç¼–è¯‘ä¹‹åçš„è“å›¾
 #include <unordered_map>
 #include <vector>
 #include "GameVM.h"
@@ -10,6 +10,7 @@ public:
 	BlueprintData sourceData;
 	std::unordered_map<int, NODE*> nodeMap;
 	std::vector<NODE*> entryNodes;
+
 	~CompiledBlueprint() {
 		for (auto& pair : nodeMap) {
 			delete pair.second;

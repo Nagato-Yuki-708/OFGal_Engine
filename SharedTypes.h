@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <windows.h>
 #include <cuda_runtime.h>
+#include "Debug.h"
 
 using namespace std;
 
