@@ -1,4 +1,5 @@
 ﻿#include"BlueprintCompiler.h"
+#include "GameVM.cpp"
 #include<iostream>
 
 CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
@@ -15,7 +16,7 @@ CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
 	BuildExecLinks(data);
 	BuildDataLinks(data);
 	for (auto& n : data.nodes) {
-		if (n.type == "BeginPlay") {
+		if (n.type == "BeginPlay" || n.type == "Play_per_N_ms" || n.type == "Play_when_N_push_down") {
 			currentCompiled->entryNodes.push_back(currentCompiled->nodeMap[n.id]);
 		}
 	}
@@ -28,6 +29,8 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建
 	if (n.type == "Mul")return new Node_Mul();
 	if (n.type == "Div")return new Node_Div();
 	if (n.type == "BeginPlay") return new BeginPlay_Node();
+	if (n.type == "Play_per_N_ms")return new PlayPerNMsNode();
+	if (n.type == "Play_when_N_push_down") return new PlayWhenKeyNode();
 	if (n.type == "Exit") return new Exit();
 
 	if (n.type == "SetTransform") {
@@ -124,6 +127,29 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 		if (auto* st = dynamic_cast<SetTransforNode*>(node)) {
 		
 		}
+
+		if (auto* timer = dynamic_cast<PlayPerNMsNode*>(node)) {
+
+			for (auto& pin : n.pins) {
+
+				if (pin.name == "Time" && pin.literal.has_value()) {
+
+					timer->intervalMs =
+						std::stoi(pin.literal.value());
+				}
+			}
+		}
+
+		if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "Btn" && pin.literal.has_value()) {
+					std::string keyStr = pin.literal.value();
+					keyNode->targetKey = StringToKeyCode(keyStr);
+				}
+			}
+		
+		}
+
 		if (auto* get = dynamic_cast<GET_VAR*>(node)) {
 			for (auto& pin : n.pins) {
 				if (pin.name == "VarToGet" && pin.literal.has_value()) {

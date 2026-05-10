@@ -103,6 +103,8 @@ public:
 
 class BeginPlay_Node :public NODE {  // 蓝图节点类型："BeginPlay"
 public:
+	bool hasExecuted = false;
+
 	void func_for_VM(ExecutionContext& ctx) override {
 		
 	}
@@ -110,32 +112,31 @@ public:
 };
 
 class PlayPerNMsNode :public NODE {  // 蓝图节点类型："PlayPerNMs" —— 另类的开始节点
-	int intervalMs = 1000;  //此处定义的是间隔的时间
-	std::atomic<bool> running = false;
-	void start();
-	void stop();
-	void func_for_VM(ExecutionContext& ctx) override {
-		start();
-	}
-};
-
-class PlayWhenKeyNode : public NODE, public InputListener {  // 蓝图节点类型："PlayWhenKey"
 public:
-	KeyCode targetKey;
-
-	PlayWhenKeyNode(KeyCode key) {     //这是一个初始化函数，在使用节点的时候记得调用它很好用
-		targetKey = key;
-
-		g_inputSystem.addListener(this);
+	int intervalMs = 0;       //这两值分别代表
+	double lastTriggerTime = 0.0;
+	void func_for_VM(ExecutionContext& ctx) {
+	//入口节点本身不执行逻辑
 	}
 
-	void onInputEvent(const InputEvent& e) override;  // ★ 声明，定义在文件末尾（需要RunVM完整定义）
-
-	void func_for_VM(ExecutionContext& ctx) override {
-		// 由事件驱动，onInputEvent中直接调用RunVM启动执行链
-	}
-
+	//分工要明确！
 };
+
+class PlayWhenKeyNode : public NODE {
+public:
+	KeyCode targetKey = KeyCode::Unknown;
+	void func_for_VM(ExecutionContext& ctx) override {
+
+		// 入口节点本身不执行逻辑
+	}
+};
+
+
+
+
+
+
+
 
 class Exit : public NODE {  // 蓝图节点类型："Exit"
 public:
@@ -575,13 +576,5 @@ inline double GetTimeSeconds() {  //计算时间函数
 	static auto start = high_resolution_clock::now();  //让时间点只会初始化一次
 	auto now = high_resolution_clock::now();
 	return duration<double>(now - start).count();  //这里是要进行时间单位的转换
-}
-
-inline void PlayWhenKeyNode::onInputEvent(const InputEvent& e) {// inline防止重定义。
-	if (e.type == InputType::KeyDown && e.key == targetKey) {
-		ExecutionContext ctx;
-		ctx.current = this->nextNode;
-		RunVM(ctx);
-	}
 }
 //头文件里在类体外定义方法必须加 inline，否则多个.cpp include 同一个.h 时会报"多重定义"链接错误。

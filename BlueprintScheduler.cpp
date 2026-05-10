@@ -1,73 +1,56 @@
 #include "BlueprintScheduler.h"
 
-void BlueprintScheduler::StartBlueprint(CompiledBlueprint* blueprint) {
-	if (!blueprint)
-		return;
-	for (auto* entry : blueprint->entryNodes) {
-		auto vm = std::make_shared<VMInstance>();
-		vm->id = nextVMID++;
-		vm->blueprint = blueprint;
-		vm->context.vmID = vm->id;
-		for (auto& var : blueprint->sourceData.variables) {
-			Value v;
-			if (var.type == "int") {
-				v = Value::makeInt(std::stoi(var.value));
-			}
-			else if (var.type == "float") {
-				v = Value::makeFloat(std::stof(var.value));
-			}
-			else if (var.type == "bool") {
-				v = Value::makeBool(var.value == "true");
-			}
-			else if (var.type == "string") {
-				v = Value::makeString(var.value);
-			}
-			vm->context.variables[var.name] = v;
+double BlueprintScheduler::GetTimeSeconds() {
+	using namespace std::chrono;
+	auto now = high_resolution_clock::now();
+	auto ms = duration_cast<milliseconds>(now.time_since_epoch()).count();
+	return ms / 1000.0;     
+}
+
+bool BlueprintScheduler::CanExecute(NODE* node) {      //这个是关键的判断函数
+	if (auto* begin = dynamic_cast<BeginPlay_Node*>(node)) {
+		if (!begin->hasExecuted) {
+			begin->hasExecuted = true;
+			return true;
 		}
-		RunVM(vm->context);
-		//只有在运行，还有暂停中的VM才能够进入调度器
-		if (vm->context.running || vm->context.paused) {
-			runningVMs.push_back(vm);
+		return false;
+	}
+	if (auto* timer = dynamic_cast<PlayPerNMsNode*>(node)) {
+		double now = GetTimeSeconds();
+		double delta = now - timer->lastTriggerTime;
+		if (delta >= (timer->intervalMs / 1000.0)) {
+			timer->lastTriggerTime = now;
+			return true;
 		}
+		return false;
+	}
+	if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
+		for (const auto& event : g_inputSystem.getEvents()) {
+			if (event.type != InputType::KeyDown) {
+				continue;
+			}
+			if (keyNode->targetKey == event.key) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
-void BlueprintScheduler::Tick() {
-	double now = GetTimeSeconds();
-	for (auto& vm : runningVMs) {
-		if (vm->finished)
-			continue;
-		if (!vm->context.running) {
-			vm->finished = true;
-			continue;   
-			//如果运行完成，那么修改他的状态，让他下次无法运行
-		}
-		//Delay的恢复机制
-		if (vm->context.paused) {
-			if (now >= vm->context.wakeUpTime) {
-				vm->context.paused = false;
-				ResumeVM(vm);
-			}
+void BlueprintScheduler::Tick() {     //这个是调度器执行函数，到时候主循环还要控制一下执行函数的使用。
+	for (auto bp : blueprints) {
+		if (!bp) continue;
+		for (auto* entry : bp->entryNodes) {
+			if (!entry) continue;
+			entryNodess.push_back(entry);  //将所有的入口节点都放在一个数组里面
 		}
 	}
-	runningVMs.erase(
-		std::remove_if(
-			runningVMs.begin(),
-			runningVMs.end(),
-			[](const std::shared_ptr<VMInstance>& vm) {
-				return vm->finished;
-			}),
-		runningVMs.end()
-	);
-
-}
-
-void BlueprintScheduler::ResumeVM(std::shared_ptr<VMInstance> vm) { 
-	//对整个函数进行执行
-	if (!vm || vm->finished)
-		return;
-	RunVM(vm->context);
-	if (!vm->context.running) {
-		vm->finished = true;
+	for (auto* entrys : entryNodess) {
+		if (CanExecute(entrys)) {
+			ExecutionContext ctx;
+			ctx.current = entrys;
+			RunVM(ctx);
+		}
+	
 	}
 }
