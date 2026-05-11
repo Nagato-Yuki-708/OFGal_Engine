@@ -6,11 +6,14 @@
 #include <memory>
 #include <cstdint>
 #include <unordered_map>
+#include <array>
 #include <optional>
 #include <math.h>
 #include <algorithm>
 #include <windows.h>
 #include <cuda_runtime.h>
+
+using namespace std;
 
 /*
 =================================================
@@ -120,7 +123,7 @@ struct ObjectData {
 	std::optional<PictureComponent> Picture;
 	std::optional<TextblockComponent> Textblock;
 	std::optional<TriggerAreaComponent> TriggerArea;
-	std::optional<BlueprintComponent> Blueprint;
+	std::optional<BlueprintComponent> Blueprint;//has_value()
 };
 
 // 场景结构
@@ -132,11 +135,83 @@ struct LevelData {
 
 /*
 =================================================
+渲染基础结构体（需在 Value 之前，因为 Value::frame 成员依赖 Frame 类型）
+=================================================
+*/
+struct StdPixel {
+	unsigned char red = 0;
+	unsigned char green = 0;
+	unsigned char blue = 0;
+};
+struct Frame {
+	int width = 0;
+	int height = 0;
+	std::vector<StdPixel> pixels;
+};
+
+/*
+=================================================
 蓝图系统结构体定义
 =================================================
 */
 #ifndef __CUDACC__  // 以下内容仅在主机编译时可见
 // 引脚定义
+
+enum class ValueType {
+	NONE = 0,
+	INT,
+	FLOAT,
+	BOOL,
+	STRING,
+	FRAME
+};
+struct Value {
+	ValueType type = ValueType::NONE;
+	int         i = 0;
+	float       f = 0.0f;
+	bool        b = false;
+	std::string s;
+	Frame       frame;
+
+	// —— 工厂方法（声明，定义在 Value.cpp）——
+	static Value makeNone();
+	static Value makeInt(int v);
+	static Value makeFloat(float v);
+	static Value makeBool(bool v);
+	static Value makeString(const std::string& s);
+	static Value makeFrame(const Frame& v);
+
+	// —— 类型查询 ——
+	bool isNone()   const { return type == ValueType::NONE; }
+	bool isInt()    const { return type == ValueType::INT; }
+	bool isFloat()  const { return type == ValueType::FLOAT; }
+	bool isBool()   const { return type == ValueType::BOOL; }
+	bool isString() const { return type == ValueType::STRING; }
+	bool isFrame()  const { return type == ValueType::FRAME; }
+
+	// —— 安全取值（类型不匹配时返回默认值，不崩溃）——
+	int asInt(int defaultVal = 0) const {
+		return (type == ValueType::INT) ? i : defaultVal;
+	}
+	float asFloat(float defaultVal = 0.0f) const {
+		return (type == ValueType::FLOAT) ? f : defaultVal;
+	}
+	bool asBool(bool defaultVal = false) const {
+		return (type == ValueType::BOOL) ? b : defaultVal;
+	}
+	const std::string& asString(const std::string& defaultVal = "") const {
+		return (type == ValueType::STRING) ? s : defaultVal;
+	}
+	const Frame& asFrame(const Frame& defaultVal = Frame{}) const {
+		return (type == ValueType::FRAME) ? frame : defaultVal;
+	}
+};
+struct PinValue {
+	bool hasValue = false;
+	Value value;
+};
+Value calcBinary(const Value& a, const Value& b, char op);
+
 struct Pin {
 	std::string name;
 	std::string io;          // "I" 或 "O"
@@ -194,19 +269,9 @@ struct BlueprintData {
 #endif
 /*
 =================================================
-渲染系统结构体定义
+渲染系统结构体定义（StdPixel / Frame 已移至 Value 之前）
 =================================================
 */
-struct StdPixel {
-	unsigned char red = 0;
-	unsigned char green = 0;
-	unsigned char blue = 0;
-};
-struct Frame {
-	int width;
-	int height;
-	std::vector<StdPixel> pixels;
-};
 struct Vector3D {		//一般用作列向量
 	float x = 0.0f, y = 0.0f, z = 1.0f;
 };
@@ -412,4 +477,41 @@ struct InputEvent {
 	KeyCode   key;
 	int       mouseX = 0;
 	int       mouseY = 0;
+};
+
+//节点初始化标准
+const std::unordered_map<std::string, KeyCode> StdkeysMap = {
+	{"A", KeyCode::A}, {"B", KeyCode::B}, {"C", KeyCode::C}, {"D", KeyCode::D},
+	{"E", KeyCode::E}, {"F", KeyCode::F}, {"G", KeyCode::G}, {"H", KeyCode::H},
+	{"I", KeyCode::I}, {"J", KeyCode::J}, {"K", KeyCode::K}, {"L", KeyCode::L},
+	{"M", KeyCode::M}, {"N", KeyCode::N}, {"O", KeyCode::O}, {"P", KeyCode::P},
+	{"Q", KeyCode::Q}, {"R", KeyCode::R}, {"S", KeyCode::S}, {"T", KeyCode::T},
+	{"U", KeyCode::U}, {"V", KeyCode::V}, {"W", KeyCode::W}, {"X", KeyCode::X},
+	{"Y", KeyCode::Y}, {"Z", KeyCode::Z},
+	{"Num0", KeyCode::Num0}, {"Num1", KeyCode::Num1}, {"Num2", KeyCode::Num2},
+	{"Num3", KeyCode::Num3}, {"Num4", KeyCode::Num4}, {"Num5", KeyCode::Num5},
+	{"Num6", KeyCode::Num6}, {"Num7", KeyCode::Num7}, {"Num8", KeyCode::Num8},
+	{"Num9", KeyCode::Num9},
+	{"F1", KeyCode::F1}, {"F2", KeyCode::F2}, {"F3", KeyCode::F3},
+	{"F4", KeyCode::F4}, {"F5", KeyCode::F5}, {"F6", KeyCode::F6},
+	{"F7", KeyCode::F7}, {"F8", KeyCode::F8}, {"F9", KeyCode::F9},
+	{"F10", KeyCode::F10}, {"F11", KeyCode::F11}, {"F12", KeyCode::F12},
+	{"Space", KeyCode::Space}, {"Enter", KeyCode::Enter},
+	{"Backspace", KeyCode::Backspace}, {"Tab", KeyCode::Tab},
+	{"Escape", KeyCode::Escape}, {"Pause", KeyCode::Pause},
+	{"PrintScreen", KeyCode::PrintScreen},
+	{"Insert", KeyCode::Insert}, {"Delete", KeyCode::Delete},
+	{"Home", KeyCode::Home}, {"End", KeyCode::End},
+	{"PageUp", KeyCode::PageUp}, {"PageDown", KeyCode::PageDown},
+	{"Left", KeyCode::Left}, {"Right", KeyCode::Right},
+	{"Up", KeyCode::Up}, {"Down", KeyCode::Down},
+	{"Grave", KeyCode::Grave}, {"Minus", KeyCode::Minus},
+	{"Equal", KeyCode::Equal}, {"LeftBracket", KeyCode::LeftBracket},
+	{"RightBracket", KeyCode::RightBracket}, {"Backslash", KeyCode::Backslash},
+	{"MouseLeft", KeyCode::MouseLeft}, {"MouseRight", KeyCode::MouseRight},
+	{"MouseMiddle", KeyCode::MouseMiddle}
+};
+const std::array<std::string, 11> AllFrameProcessOps = {
+	"Bloom","FXAA","SMAA","LenDistortion","ChromaticAberration",
+	"Blur","Sharpen","FilmGrain","Vignette","ColorCorrection","ColorGrading"
 };

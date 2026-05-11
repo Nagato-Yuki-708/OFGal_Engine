@@ -72,6 +72,7 @@ DetailViewer::DetailViewer()
         m_pViewObject = MapViewOfFile(m_hMapObject, FILE_MAP_READ, 0, 0, OBJECT_SHARED_MEM_SIZE);
 
     m_inputSystem.SetGlobalCapture(false);
+    m_inputSystem.SetWindowHandle(GetConsoleWindow());
 
     // 强制处理消息队列，让窗口位置/大小立即生效
     MSG msg;
