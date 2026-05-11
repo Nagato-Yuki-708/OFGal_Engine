@@ -7,6 +7,8 @@
 #include "InputCollector.h"
 #include "Debug.h"
 #include <iostream>
+#include <sstream>   // for std::ostringstream
+#include <cstdio>    // for snprintf
 
 static const char* RESET = "\x1b[0m";
 static const char* CYAN = "\x1b[36m";
@@ -52,11 +54,12 @@ private:
 
     std::string WideToUTF8(const std::wstring& wstr) const;
     int GetConsoleColumns();
-
+    std::string TruncateText(const std::string& text, int maxWidth) const;
     static size_t VisibleLength(const std::string& s);
 
     void MoveToPrev(int target);
     void MoveToNext(int target);
     bool Cut(int target);
     bool Link();
+    bool Edit(int target);
 };

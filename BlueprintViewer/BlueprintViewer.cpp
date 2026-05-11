@@ -240,6 +240,11 @@ void BlueprintViewer::Run() {
                     selectedNodeId1 = currentEntryNodeId;
                     selectedNodeId2 = currentEntryNodeId;
 
+                    if (pNodeIdSharedMem) {
+                        pNodeIdSharedMem[0] = selectedNodeId1;
+                        pNodeIdSharedMem[1] = selectedNodeId2;
+                    }
+
                     AdjustBufferSize();
 
                     if (hNodeViewerEvent) SetEvent(hNodeViewerEvent);
