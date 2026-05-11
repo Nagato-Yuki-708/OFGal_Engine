@@ -41,6 +41,7 @@ public:
 	NODE* lastNode = nullptr;
 	NODE* nextNode = nullptr;
 	NODE* loopNode = nullptr;    //这里记录了循环的节点
+	ObjectData* owner = nullptr;   //所属对象指针（可选，视节点类型而定）
 
 	// ★ 编译注意：所有节点统一签名 void func_for_VM(ExecutionContext& ctx)
 	//   RunVM 在调用前将 ctx.current 默认设为 node->nextNode

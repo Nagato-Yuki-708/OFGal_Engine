@@ -81,11 +81,12 @@ void BlueprintScheduler::ScanObject(ObjectData* obj) {
 
 		BlueprintCompiler compiler;
 
-		CompiledBlueprint* compiled =
-			compiler.Compile(ReadBPData(obj->Blueprint->Path));
+		CompiledBlueprint* compiled = compiler.Compile(ReadBPData(obj->Blueprint->Path));
 
 		if (compiled) {
-
+			for (auto& pair : compiled->nodeMap) {
+				pair.second->owner = obj;   // 绑定对象指针
+			}
 			blueprints.push_back(compiled);
 		}
 	}

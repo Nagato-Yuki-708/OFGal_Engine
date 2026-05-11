@@ -17,6 +17,7 @@ public:
 	void getBlueprint(LevelData* data);
 private:
 
+	void BindNodeOwner(ObjectData* obj);    //这个程序用来绑定对象的指针
 	bool CanExecute(NODE* node);     //能够判断一个节点是否满足执行的条件
 	double GetTimeSeconds();    //获得当前的时间
 	void ScanObject(ObjectData* obj);  //用来扫描所有的子对象
