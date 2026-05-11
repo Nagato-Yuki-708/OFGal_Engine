@@ -105,6 +105,15 @@
     <ClCompile Include="InputCollector.cpp">
       <Filter>Source Files\InputSystem</Filter>
     </ClCompile>
+    <ClCompile Include="BlueprintCompiler.cpp">
+      <Filter>Source Files\GameVM</Filter>
+    </ClCompile>
+    <ClCompile Include="Value.cpp">
+      <Filter>Source Files\GameVM</Filter>
+    </ClCompile>
+    <ClCompile Include="BlueprintScheduler.cpp">
+      <Filter>Source Files\GameVM</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -157,6 +166,15 @@
     </ClInclude>
     <ClInclude Include="InputSystem.h">
       <Filter>Header Files\InputSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="BlueprintCompiler.h">
+      <Filter>Header Files\GameVM</Filter>
+    </ClInclude>
+    <ClInclude Include="BlueprintScheduler.h">
+      <Filter>Header Files\GameVM</Filter>
+    </ClInclude>
+    <ClInclude Include="CompiledBlueprint.h">
+      <Filter>Header Files\GameVM</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

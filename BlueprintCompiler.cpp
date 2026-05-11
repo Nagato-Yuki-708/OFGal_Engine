@@ -1,0 +1,261 @@
+﻿#include"BlueprintCompiler.h"
+#include "GameVM.cpp"
+#include<iostream>
+
+CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
+	currentCompiled = new CompiledBlueprint();
+	currentCompiled->sourceData = data;
+	//这是蓝图编辑器的核心函数，能够调用其他的组件函数
+	for (auto& n : data.nodes) {
+		NODE* node = CreateNode(n);
+		if (node) {
+			currentCompiled->nodeMap[n.id] = node;
+		}
+	}
+	InitNodeData(data);
+	BuildExecLinks(data);
+	BuildDataLinks(data);
+	for (auto& n : data.nodes) {
+		if (n.type == "BeginPlay" || n.type == "Play_per_N_ms" || n.type == "Play_when_N_push_down") {
+			currentCompiled->entryNodes.push_back(currentCompiled->nodeMap[n.id]);
+		}
+	}
+	return currentCompiled;
+}
+
+NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建各个节点
+	if (n.type == "ADD")return new Node_ADD();
+	if (n.type == "Sub") return new Node_Sub();
+	if (n.type == "Mul")return new Node_Mul();
+	if (n.type == "Div")return new Node_Div();
+	if (n.type == "BeginPlay") return new BeginPlay_Node();
+	if (n.type == "Play_per_N_ms")return new PlayPerNMsNode();
+	if (n.type == "Play_when_N_push_down") return new PlayWhenKeyNode();
+	if (n.type == "Exit") return new Exit();
+
+	if (n.type == "SetTransform") {
+		return new SetTransforNode();
+	}
+
+	// ★ 以下是条件分支 / 循环 / 显示 / 变量类节点
+	if (n.type == "If")            return new If_Node();
+	if (n.type == "While")         return new While_Node();
+	if (n.type == "Break")         return new Break_Node();
+	if (n.type == "Continue")      return new Continue_Node();
+	if (n.type == "PrintText")     return new PrintText_Node();
+	if (n.type == "Render")        return new Render_Node();
+	if (n.type == "FrameProcess")  return new FrameProcess_Node();
+	if (n.type == "ShowtheFrame")  return new ShowtheFrame_Node();
+	if (n.type == "PlaySound")     return new PlaySound_Node();
+	if (n.type == "PauseSound")    return new PauseSound_Node();
+	if (n.type == "GET_VAR")       return new GET_VAR();
+	if (n.type == "SET_VAR")       return new SET_VAR();
+
+	std::cout << "Unknown node: " << n.type << "\n";
+	return nullptr;
+}
+
+void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
+	for (auto& link : data.links) {
+		NODE* A = currentCompiled->nodeMap[link.sourceNode];
+		NODE* B = currentCompiled->nodeMap[link.targetNode];
+		if (!A || !B) continue;
+		if (link.sourcePin == "exec" || link.sourcePin == "then") {  //这里进行基础的链接
+			A->nextNode = B;
+			B->lastNode = A;
+		}
+		auto* whileNode = dynamic_cast<While_Node*>(A);
+		if (whileNode && link.sourcePin == "OEXEC_Loop") {  //这里能够进行传导，将每一个节点都带上循环的属性
+			nodeTowhile[B] = whileNode;
+		}
+		bool updated = true;
+		while (updated) {
+			updated = false;
+			for (auto& link : data.links) {
+				NODE* A = currentCompiled->nodeMap[link.sourceNode];
+				NODE* B = currentCompiled->nodeMap[link.targetNode];
+				if (nodeTowhile.count(A) && !nodeTowhile.count(B)) {
+					nodeTowhile[B] = nodeTowhile[A];
+					updated = true;
+				}
+			}
+		}
+		for (auto& pair : nodeTowhile) {
+			NODE* node = pair.first;
+			While_Node* whileNode = pair.second;
+			if (auto* br = dynamic_cast<Break_Node*> (node)) {
+				br->loopNode = whileNode;
+			}
+			if (auto* cont = dynamic_cast<Continue_Node*>(node)) {
+				cont->loopNode = whileNode;
+			}
+		}
+
+		auto* branch = dynamic_cast<If_Node*>(A);
+		if (branch) {
+			if (link.sourcePin == "OEXEC_A") {
+				branch->trueNode = B;
+			}
+			if (link.sourcePin == "OEXEC_B") {
+				branch->falseNode = B;
+			}
+		}
+		auto* whileNode = dynamic_cast<While_Node*>(A);
+		if (whileNode) {
+			if (link.sourcePin == "OEXEC_Loop") {
+				whileNode->loopBodyNode = B;
+			}
+			else if (link.sourcePin == "OEXEC") {
+				whileNode->loopExitNode = B;
+			}
+		}
+	}
+}
+
+
+
+void BlueprintCompiler::InitNodeData(const BlueprintData& data) {     
+	for (auto& n : data.nodes) {
+		NODE* node = currentCompiled->nodeMap[n.id];
+		if (auto* bin = dynamic_cast<BinaryOpNode*>(node)) {  //如果是运算节点，那么就给他们的输入输出数据分配空间
+			bin->InData.resize(2);
+			bin->OutData.resize(1);
+			for (int i = 0; i < 2; i++) {
+				bin->InData[i] = nullptr;
+			}
+		}
+		if (auto* st = dynamic_cast<SetTransforNode*>(node)) {
+		
+		}
+
+		if (auto* timer = dynamic_cast<PlayPerNMsNode*>(node)) {
+
+			for (auto& pin : n.pins) {
+
+				if (pin.name == "Time" && pin.literal.has_value()) {
+
+					timer->intervalMs =
+						std::stoi(pin.literal.value());
+				}
+			}
+		}
+
+		if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "Btn" && pin.literal.has_value()) {
+					std::string keyStr = pin.literal.value();
+					keyNode->targetKey = StringToKeyCode(keyStr);
+				}
+			}
+		
+		}
+
+		if (auto* get = dynamic_cast<GET_VAR*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "VarToGet" && pin.literal.has_value()) {
+					get->varName = pin.literal.value();  // 获取该字面量的值
+				}
+			}
+		}
+
+		if (auto* set = dynamic_cast<SET_VAR*>(node)) {
+
+			for (auto& pin : n.pins) {
+
+				// 变量名（必须 literal）
+				if (pin.name == "VarToSet" && pin.literal.has_value()) {
+					set->varName = pin.literal.value();
+				}
+
+				// NewValue literal（如果存在）
+				if (pin.name == "NewValue" && pin.literal.has_value()) {
+
+					const std::string& val = pin.literal.value();
+
+					// 根据 type 转 Value
+					if (pin.type == "int") {
+						set->literalValue = Value::makeInt(std::stoi(val));
+					}
+					else if (pin.type == "float") {
+						set->literalValue = Value::makeFloat(std::stof(val));
+					}
+					else if (pin.type == "bool") {
+						set->literalValue = Value::makeBool(val == "true");
+					}
+					else if (pin.type == "string") {
+						set->literalValue = Value::makeString(val);
+					}
+				}
+			}
+		}
+
+	}
+}
+
+
+void BlueprintCompiler::BuildDataLinks(const  BlueprintData& data) {
+	for (auto& link : data.links) {
+
+		if (link.sourcePin == "exec" || link.sourcePin == "then") {
+			continue;
+		}
+
+		NODE* src = currentCompiled->nodeMap[link.sourceNode];
+		NODE* dst = currentCompiled->nodeMap[link.targetNode];
+		if (!src || !dst) continue;
+
+		Value* out = nullptr;
+
+		// =========================
+		// 获取输出
+		// =========================
+		if (auto* bin = dynamic_cast<BinaryOpNode*>(src)) {
+			out = &bin->OutData[0];
+		}
+		else if (auto* get = dynamic_cast<GET_VAR*>(src)) {
+			out = &get->outValue;
+		}
+		else if (auto* set = dynamic_cast<SET_VAR*>(src)) {
+			out = &set->outValue;   // ✅ 支持链式
+		}
+
+		// =========================
+		// Binary
+		// =========================
+		if (auto* dstBin = dynamic_cast<BinaryOpNode*>(dst)) {
+			if (out) {
+				int index = (link.targetPin == "A") ? 0 : 1;
+				dstBin->InData[index] = out;
+			}
+		}
+
+		// =========================
+		// SET_VAR（只处理 NewValue）
+		// =========================
+		if (auto* set = dynamic_cast<SET_VAR*>(dst)) {
+			if (link.targetPin == "NewValue") {
+				set->inValue = out;
+			}
+		}
+
+		// =========================
+		// If / While / Transform（你原来的）
+		// =========================
+		if (auto* branch = dynamic_cast<If_Node*>(dst)) {
+			if (link.targetPin == "shouldRunA" && out) {
+				branch->condition = out;
+			}
+		}
+
+		if (auto* whileNode = dynamic_cast<While_Node*>(dst)) {
+			if (link.targetPin == "shouldRunLoop" && out) {
+				whileNode->condition = out;
+			}
+		}
+
+		if (auto* st = dynamic_cast<SetTransforNode*>(dst)) {
+			if (link.targetPin == "Location.x") st->in_loc_x = out;
+			if (link.targetPin == "Location.y") st->in_loc_y = out;
+			if (link.targetPin == "Location.z") st->in_loc_z = out;
+		}
+	}
