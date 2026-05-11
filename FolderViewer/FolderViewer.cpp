@@ -101,7 +101,7 @@ FolderViewer::FolderViewer()
                 scaleY = (float)height / 1600.0f;
             }
         }
-        SetWindowPos(hwndConsole, nullptr, 350.0f * scaleX, 1010.0f * scaleY, 1690.0f * scaleX, 470.0f * scaleY, SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowPos(hwndConsole, nullptr, 350.0f * scaleX, 1010.0f * scaleY, 1690.0f * scaleX, 620.0f * scaleY, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
     }
     m_inputSystem = std::make_unique<InputSystem>();
     m_inputCollector = std::make_unique<InputCollector>(m_inputSystem.get());

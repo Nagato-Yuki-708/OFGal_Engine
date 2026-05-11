@@ -1,4 +1,5 @@
 ﻿#include"BlueprintCompiler.h"
+#include "GameVM.cpp"
 #include<iostream>
 
 CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
@@ -23,11 +24,13 @@ CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){
 }
 
 NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建各个节点
-	if (n.type == "ADD")return new Node_ADD();
+	if (n.type == "Add")return new Node_ADD();
 	if (n.type == "Sub") return new Node_Sub();
 	if (n.type == "Mul")return new Node_Mul();
 	if (n.type == "Div")return new Node_Div();
 	if (n.type == "BeginPlay") return new BeginPlay_Node();
+	if (n.type == "Play_per_N_ms")return new PlayPerNMsNode();
+	if (n.type == "Play_when_N_push_down") return new PlayWhenKeyNode();
 	if (n.type == "Exit") return new Exit();
 
 	if (n.type == "SetTransform") {
@@ -35,18 +38,18 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建
 	}
 
 	// ★ 以下是条件分支 / 循环 / 显示 / 变量类节点
-	if (n.type == "If")            return new If_Node();
-	if (n.type == "While")         return new While_Node();
-	if (n.type == "Break")         return new Break_Node();
-	if (n.type == "Continue")      return new Continue_Node();
+	if (n.type == "if")            return new If_Node();
+	if (n.type == "while")         return new While_Node();
+	if (n.type == "break")         return new Break_Node();
+	if (n.type == "continue")      return new Continue_Node();
 	if (n.type == "PrintText")     return new PrintText_Node();
 	if (n.type == "Render")        return new Render_Node();
 	if (n.type == "FrameProcess")  return new FrameProcess_Node();
 	if (n.type == "ShowtheFrame")  return new ShowtheFrame_Node();
 	if (n.type == "PlaySound")     return new PlaySound_Node();
 	if (n.type == "PauseSound")    return new PauseSound_Node();
-	if (n.type == "GET_VAR")       return new GET_VAR();
-	if (n.type == "SET_VAR")       return new SET_VAR();
+	if (n.type == "GetVariable")       return new GET_VAR();
+	if (n.type == "SetVariable")       return new SET_VAR();
 
 	//std::cout << "Unknown node: " << n.type << "\n";
 	DEBUG_LOG("Unknown node: " << n.type << "\n");
@@ -124,6 +127,29 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 		if (auto* st = dynamic_cast<SetTransforNode*>(node)) {
 
 		}
+
+		if (auto* timer = dynamic_cast<PlayPerNMsNode*>(node)) {
+
+			for (auto& pin : n.pins) {
+
+				if (pin.name == "Time" && pin.literal.has_value()) {
+
+					timer->intervalMs =
+						std::stoi(pin.literal.value());
+				}
+			}
+		}
+
+		if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "Btn" && pin.literal.has_value()) {
+					std::string keyStr = pin.literal.value();
+					keyNode->targetKey = StringToKeyCode(keyStr);
+				}
+			}
+		
+		}
+
 		if (auto* get = dynamic_cast<GET_VAR*>(node)) {
 			for (auto& pin : n.pins) {
 				if (pin.name == "VarToGet" && pin.literal.has_value()) {
@@ -419,9 +445,9 @@ void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
 		}
 
 		if (auto* st = dynamic_cast<SetTransforNode*>(dst)) {
-			if (link.targetPin == "Location.x") st->in_loc_x = out;
-			if (link.targetPin == "Location.y") st->in_loc_y = out;
-			if (link.targetPin == "Location.z") st->in_loc_z = out;
+			if (link.targetPin == "Location_x") st->in_loc_x = out;
+			if (link.targetPin == "Location_y") st->in_loc_y = out;
+			if (link.targetPin == "Location_z") st->in_loc_z = out;
 		}
 
 		// =========================

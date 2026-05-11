@@ -90,7 +90,7 @@ static void TraverseObject(
     }
 }
 
-void RenderingSystem::RefreshRenderObjects(const LevelData & currentLevel) {
+void RenderingSystem::RefreshRenderObjects(const LevelData& currentLevel) {
     RenderObjects.clear();
     Matrix3D identity;
     for (const auto& [objName, objPtr] : currentLevel.objects) {
@@ -146,7 +146,7 @@ Frame RenderingSystem::Rasterize(std::vector<RenderData>& renderObjects, Texture
     result.pixels.resize(CanvasSize.x * CanvasSize.y, { 0,0,0 });
 
     // 验证有效性
-    if(MSAA_Multiple < 1 || MSAA_Multiple > 4)
+    if (MSAA_Multiple < 1 || MSAA_Multiple > 4)
         MSAA_Multiple = 1;
 
     for (RenderData& renderData : renderObjects) {
@@ -212,28 +212,24 @@ void RenderingSystem::Print_A_Frame(const Frame& frame) {
     drawFrame(frame);
 }
 
-float RenderingSystem::CalculateThumbnailScaleFactor() const
+float RenderingSystem::CalculateThumbnailScaleFactor(Size2DInt& oriCanvasSize) const
 {
-    float k = 0.5f;  // 默认值
-    HWND hMainWnd = FindWindowW(NULL, L"OFGal_Engine");
-    if (hMainWnd) {
-        RECT rect;
-        if (GetWindowRect(hMainWnd, &rect)) {
-            int mainWidth = rect.right - rect.left;
-            if (mainWidth > 0) {
-                k = static_cast<float>(CanvasSize.x) / mainWidth;
-                // 防止极端值，维持合理范围
-                if (k < 0.01f) k = 0.5f;
-                if (k > 10.0f) k = 0.5f;
-            }
-        }
+    if (oriCanvasSize.x <= 0 || oriCanvasSize.y <= 0 ||
+        CanvasSize.x <= 0 || CanvasSize.y <= 0)
+    {
+        return 0.5f;
     }
+
+    float scaleX = static_cast<float>(CanvasSize.x) / static_cast<float>(oriCanvasSize.x);
+    float scaleY = static_cast<float>(CanvasSize.y) / static_cast<float>(oriCanvasSize.y);
+
+    float k = (scaleX < scaleY) ? scaleX : scaleY;
     return k;
 }
 
-void RenderingSystem::ScaleForThumbnail(std::vector<RenderData>& renderObjects)
+void RenderingSystem::ScaleForThumbnail(std::vector<RenderData>& renderObjects, Size2DInt& oriCanvasSize)
 {
-    float k = CalculateThumbnailScaleFactor();
+    float k = CalculateThumbnailScaleFactor(oriCanvasSize);
     if (fabsf(k - 1.0f) < 1e-6f) return; // 无需缩放
 
     Matrix3D S;
@@ -254,17 +250,61 @@ void RenderingSystem::ScaleForThumbnail(std::vector<RenderData>& renderObjects)
         }
     }
 }
-void RenderingSystem::RenderThumbnailAndPrint(const LevelData& currentLevel,
+
+void RenderingSystem::DrawBorderLine(Frame& frame, const Size2DInt& border, const StdPixel& color) const
+{
+    if (border.x <= 0 || border.y <= 0) return;
+
+    // 上水平线 (y = 0)
+    for (int x = 0; x < border.x && x < frame.width; ++x) {
+        frame.pixels[x] = color;
+    }
+
+    // 下水平线 (y = border.y - 1)
+    if (border.y >= 2) {
+        int yIdx = border.y - 1;
+        if (yIdx < frame.height) {
+            for (int x = 0; x < border.x && x < frame.width; ++x) {
+                frame.pixels[yIdx * frame.width + x] = color;
+            }
+        }
+    }
+
+    // 左垂直线 (x = 0)
+    for (int y = 0; y < border.y && y < frame.height; ++y) {
+        frame.pixels[y * frame.width] = color;
+    }
+
+    // 右垂直线 (x = border.x - 1)
+    if (border.x >= 2) {
+        int xIdx = border.x - 1;
+        if (xIdx < frame.width) {
+            for (int y = 0; y < border.y && y < frame.height; ++y) {
+                frame.pixels[y * frame.width + xIdx] = color;
+            }
+        }
+    }
+}
+
+void RenderingSystem::RenderThumbnailAndPrint(const LevelData& currentLevel, Size2DInt& oriCanvasSize,
     TextureSamplingMethod samplingMethod,
     int MSAA_Multiple) {
     RefreshRenderObjects(currentLevel);
 
-    ScaleForThumbnail(RenderObjects);
+    ScaleForThumbnail(RenderObjects, oriCanvasSize);
 
     AABB_Remove(RenderObjects);
     SortByDepth(RenderObjects);
     RefreshDepth(RenderObjects);
 
     Frame frame = Rasterize(RenderObjects, samplingMethod, MSAA_Multiple);
+
+    float k = CalculateThumbnailScaleFactor(oriCanvasSize);
+    Size2DInt scaledBorder;
+    scaledBorder.x = static_cast<int>(oriCanvasSize.x * k + 0.5f);
+    scaledBorder.y = static_cast<int>(oriCanvasSize.y * k + 0.5f);
+    StdPixel borderColor = { 255, 0, 0 };
+    DrawBorderLine(frame, scaledBorder, borderColor);
+
     drawFrame(frame);
 }

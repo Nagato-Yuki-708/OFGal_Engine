@@ -2,6 +2,36 @@
 #include"SharedTypes.h"
 #include "GameVM.h"
 
+static std::unordered_map<std::string, KeyCode>
+g_keyMap = {            //这是用于获取输入的哈希表
+
+	{"A", KeyCode::A},
+	{"B", KeyCode::B},
+	{"C", KeyCode::C},
+
+	{"Space", KeyCode::Space},
+	{"Enter", KeyCode::Enter},
+
+	{"Left", KeyCode::Left},
+	{"Right", KeyCode::Right},
+
+	{"MouseLeft", KeyCode::MouseLeft},
+	{"MouseRight", KeyCode::MouseRight},
+
+};
+
+KeyCode StringToKeyCode(
+	const std::string& str) {
+
+	auto it = g_keyMap.find(str);
+
+	if (it != g_keyMap.end()) {
+		return it->second;
+	}
+
+	return KeyCode::Unknown;
+}
+
 Value calcBinary(const Value& a, const Value& b, char op) {
 	if (a.type == ValueType::INT && b.type == ValueType::INT) {
 		int x = a.i;
@@ -76,7 +106,7 @@ Value Node_ADD::compute(const Value& a, const Value& b) {
 		return Value::makeString(a.s + b.s);
 	}
 
-	std::cout << "Add type error\n";
+	OutputDebugStringA("Add type error\n");
 	return Value();
 }
 Value Node_Sub::compute(const Value& a, const Value& b) {
@@ -108,29 +138,13 @@ Value Node_Div::compute(const Value& a, const Value& b) {
 	float fb = (b.type == ValueType::INT) ? b.i : b.f;
 
 	if (fb == 0.0f) {
-		std::cout << "Divide by zero!\n";
+		OutputDebugStringA("Divide by zero!\n");
 		return Value();
 	}
 
 	float fa = (a.type == ValueType::INT) ? a.i : a.f;
 
 	return Value::makeFloat(fa / fb);
-}
-void PlayPerNMsNode::start() {
-	running = true;
-	std::thread([this]() {
-		while (running) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
-
-			ExecutionContext ctx;
-			ctx.current = this->nextNode;
-
-			RunVM(ctx);   // 用引擎执行
-		}
-		}).detach();
-}
-void PlayPerNMsNode::stop() {
-	running = false;
 }
 
 void SetTransforNode::func_for_VM(ExecutionContext& ctx) {

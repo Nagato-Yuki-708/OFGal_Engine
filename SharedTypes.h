@@ -6,6 +6,7 @@
 #include <memory>
 #include <cstdint>
 #include <unordered_map>
+#include <array>
 #include <optional>
 #include <math.h>
 #include <algorithm>
@@ -123,7 +124,7 @@ struct ObjectData {
 	std::optional<PictureComponent> Picture;
 	std::optional<TextblockComponent> Textblock;
 	std::optional<TriggerAreaComponent> TriggerArea;
-	std::optional<BlueprintComponent> Blueprint;
+	std::optional<BlueprintComponent> Blueprint;//has_value()
 };
 
 // 场景结构
@@ -417,4 +418,101 @@ struct ChildProcessConfig {
 
 	std::unordered_map<std::string, DWORD> sharedMemBlocks; // 块名 -> 大小
 	std::unordered_map<std::string, bool> eventsToCreate;   // 事件名 -> 初始状态
+};
+
+// ==================== 输入系统相关 ====================
+enum class KeyCode {
+	Unknown = 0,
+	A, B, C, D, E, F, G, H, I, J, K, L, M,
+	N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+	Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
+	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+	LShift, RShift, LControl, RControl, LAlt, RAlt,
+	LWin, RWin,
+	CapsLock, NumLock, ScrollLock,
+	Space, Enter, Backspace, Tab,
+	Escape, Pause, PrintScreen,
+	Insert, Delete, Home, End, PageUp, PageDown,
+	Left, Right, Up, Down,
+	Grave, Minus, Equal, LeftBracket, RightBracket, Backslash,
+	Semicolon, Apostrophe, Comma, Period, Slash,
+	Numpad0, Numpad1, Numpad2, Numpad3, Numpad4,
+	Numpad5, Numpad6, Numpad7, Numpad8, Numpad9,
+	NumpadAdd, NumpadSubtract, NumpadMultiply, NumpadDivide, NumpadDecimal,
+	NumpadEnter,
+	VolumeMute, VolumeDown, VolumeUp,
+	MediaNext, MediaPrev, MediaStop, MediaPlayPause,
+	BrowserBack, BrowserForward, BrowserRefresh, BrowserHome,
+	CtrlS, CtrlN,
+	MouseLeft, MouseRight, MouseMiddle, MouseX1, MouseX2
+};
+
+enum class Modifier {
+	None = 0,
+	Ctrl = 1 << 0,
+	Shift = 1 << 1,
+	Alt = 1 << 2
+};
+
+inline Modifier operator|(Modifier a, Modifier b) {
+	return static_cast<Modifier>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+struct KeyBinding {
+	int      vk;
+	Modifier modifiers;
+	KeyCode  eventCode;
+	bool     edgeOnly;
+};
+
+enum class InputType {
+	KeyDown,
+	KeyUp,
+	MouseMove,
+	MouseUp,
+	MouseDown
+};
+
+struct InputEvent {
+	InputType type;
+	KeyCode   key;
+	int       mouseX = 0;
+	int       mouseY = 0;
+};
+
+//节点初始化标准
+const std::unordered_map<std::string, KeyCode> StdkeysMap = {
+	{"A", KeyCode::A}, {"B", KeyCode::B}, {"C", KeyCode::C}, {"D", KeyCode::D},
+	{"E", KeyCode::E}, {"F", KeyCode::F}, {"G", KeyCode::G}, {"H", KeyCode::H},
+	{"I", KeyCode::I}, {"J", KeyCode::J}, {"K", KeyCode::K}, {"L", KeyCode::L},
+	{"M", KeyCode::M}, {"N", KeyCode::N}, {"O", KeyCode::O}, {"P", KeyCode::P},
+	{"Q", KeyCode::Q}, {"R", KeyCode::R}, {"S", KeyCode::S}, {"T", KeyCode::T},
+	{"U", KeyCode::U}, {"V", KeyCode::V}, {"W", KeyCode::W}, {"X", KeyCode::X},
+	{"Y", KeyCode::Y}, {"Z", KeyCode::Z},
+	{"Num0", KeyCode::Num0}, {"Num1", KeyCode::Num1}, {"Num2", KeyCode::Num2},
+	{"Num3", KeyCode::Num3}, {"Num4", KeyCode::Num4}, {"Num5", KeyCode::Num5},
+	{"Num6", KeyCode::Num6}, {"Num7", KeyCode::Num7}, {"Num8", KeyCode::Num8},
+	{"Num9", KeyCode::Num9},
+	{"F1", KeyCode::F1}, {"F2", KeyCode::F2}, {"F3", KeyCode::F3},
+	{"F4", KeyCode::F4}, {"F5", KeyCode::F5}, {"F6", KeyCode::F6},
+	{"F7", KeyCode::F7}, {"F8", KeyCode::F8}, {"F9", KeyCode::F9},
+	{"F10", KeyCode::F10}, {"F11", KeyCode::F11}, {"F12", KeyCode::F12},
+	{"Space", KeyCode::Space}, {"Enter", KeyCode::Enter},
+	{"Backspace", KeyCode::Backspace}, {"Tab", KeyCode::Tab},
+	{"Escape", KeyCode::Escape}, {"Pause", KeyCode::Pause},
+	{"PrintScreen", KeyCode::PrintScreen},
+	{"Insert", KeyCode::Insert}, {"Delete", KeyCode::Delete},
+	{"Home", KeyCode::Home}, {"End", KeyCode::End},
+	{"PageUp", KeyCode::PageUp}, {"PageDown", KeyCode::PageDown},
+	{"Left", KeyCode::Left}, {"Right", KeyCode::Right},
+	{"Up", KeyCode::Up}, {"Down", KeyCode::Down},
+	{"Grave", KeyCode::Grave}, {"Minus", KeyCode::Minus},
+	{"Equal", KeyCode::Equal}, {"LeftBracket", KeyCode::LeftBracket},
+	{"RightBracket", KeyCode::RightBracket}, {"Backslash", KeyCode::Backslash},
+	{"MouseLeft", KeyCode::MouseLeft}, {"MouseRight", KeyCode::MouseRight},
+	{"MouseMiddle", KeyCode::MouseMiddle}
+};
+const std::array<std::string, 11> AllFrameProcessOps = {
+	"Bloom","FXAA","SMAA","LenDistortion","ChromaticAberration",
+	"Blur","Sharpen","FilmGrain","Vignette","ColorCorrection","ColorGrading"
 };

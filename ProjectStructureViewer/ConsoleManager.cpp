@@ -54,7 +54,7 @@ void ConsoleManager::SetupWindow() {
             SetConsoleScreenBufferSize(m_hConsoleOut, bufferSize);
         }
         // 再设置窗口位置与尺寸
-        SetWindowPos(hwndConsole, nullptr, 0, 1010.0f * scaleY, 350.0f * scaleX, 470.0f * scaleY, SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowPos(hwndConsole, nullptr, 0, 1010.0f * scaleY, 350.0f * scaleX, 630.0f * scaleY, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
     }
 
     if (m_hConsoleOut == INVALID_HANDLE_VALUE) return;

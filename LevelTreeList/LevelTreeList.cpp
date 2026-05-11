@@ -261,7 +261,7 @@ void LevelTreeList::RenderTree() {
         std::cout << "\033[37mNo level loaded.\033[0m" << std::endl;
         return;
     }
-    std::cout << "\033[36mW/Up: select previous  S/Down: select next  J: add object  K: delete object\033[0m\n" << std::endl;
+    std::cout << "\033[36mW/Up: select previous\nS/Down: select next\nJ: add object\nK: delete object\033[0m\n" << std::endl;
     for (size_t i = 0; i < m_displayNodes.size(); ++i) {
         const auto& node = m_displayNodes[i];
         if (static_cast<int>(i) == m_selectedIndex) {
@@ -311,7 +311,7 @@ void LevelTreeList::SetWindowSizeAndPosition() {
             static_cast<int>(0.0f),
             static_cast<int>(430.0f * scaleX),
             static_cast<int>(1010.0f * scaleY),
-            SWP_NOZORDER | SWP_NOACTIVATE);
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
     }
 }
 

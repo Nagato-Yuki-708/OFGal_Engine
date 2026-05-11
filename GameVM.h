@@ -7,7 +7,7 @@
 #include "SoundEvents.h"
 #include"InputCollector.h"
 #include "InputSystem.h"
-#include "InputEvent.h"
+#include <chrono>
 #include <unordered_map>
 
 // ============================================================
@@ -15,17 +15,21 @@
 // ============================================================
 class NODE;  // ExecutionContext 需要 NODE* 成员
 
-// ============================================================
 // 执行上下文（必须在 NODE 之前定义，因为 NODE::func_for_VM 需要 ExecutionContext 完整类型）
-// ============================================================
+
+
 class ExecutionContext {   //执行引擎,起到一个记录上下文的作用
 public:
 	NODE* current = nullptr;
 	bool running = true;
+	bool paused = false;
 	NODE* lastExecuted = nullptr;  //在调试的时候使用
 	std::unordered_map<std::string, Value> variables;  //蓝图上下文的变量表，GET_VAR/SET_VAR 节点通过这个表读写变量
 	ObjectData* selfObject = nullptr;  // 当前执行上下文的对象引用
 };
+
+
+
 
 // ============================================================
 // NODE 基类
@@ -35,6 +39,7 @@ public:
 	NODE* lastNode = nullptr;
 	NODE* nextNode = nullptr;
 	NODE* loopNode = nullptr;    //这里记录了循环的节点
+	ObjectData* owner = nullptr;   //所属对象指针（可选，视节点类型而定）
 
 	// ★ 编译注意：所有节点统一签名 void func_for_VM(ExecutionContext& ctx)
 	//   RunVM 在调用前将 ctx.current 默认设为 node->nextNode
@@ -96,6 +101,8 @@ public:
 
 class BeginPlay_Node :public NODE {  // 蓝图节点类型："BeginPlay"
 public:
+	bool hasExecuted = false;
+
 	void func_for_VM(ExecutionContext& ctx) override {
 		
 	}
@@ -103,32 +110,31 @@ public:
 };
 
 class PlayPerNMsNode :public NODE {  // 蓝图节点类型："PlayPerNMs" —— 另类的开始节点
-	int intervalMs = 1000;  //此处定义的是间隔的时间
-	std::atomic<bool> running = false;
-	void start();
-	void stop();
-	void func_for_VM(ExecutionContext& ctx) override {
-		start();
-	}
-};
-
-class PlayWhenKeyNode : public NODE, public InputListener {  // 蓝图节点类型："PlayWhenKey"
 public:
-	KeyCode targetKey;
-
-	PlayWhenKeyNode(KeyCode key) {     //这是一个初始化函数，在使用节点的时候记得调用它很好用
-		targetKey = key;
-
-		g_inputSystem.addListener(this);
+	int intervalMs = 0;       //这两值分别代表
+	double lastTriggerTime = 0.0;
+	void func_for_VM(ExecutionContext& ctx) {
+	//入口节点本身不执行逻辑
 	}
 
-	void onInputEvent(const InputEvent& e) override;  // ★ 声明，定义在文件末尾（需要RunVM完整定义）
-
-	void func_for_VM(ExecutionContext& ctx) override {
-		// 由事件驱动，onInputEvent中直接调用RunVM启动执行链
-	}
-
+	//分工要明确！
 };
+
+class PlayWhenKeyNode : public NODE {
+public:
+	KeyCode targetKey = KeyCode::Unknown;
+	void func_for_VM(ExecutionContext& ctx) override {
+
+		// 入口节点本身不执行逻辑
+	}
+};
+
+
+
+
+
+
+
 
 class Exit : public NODE {  // 蓝图节点类型："Exit"
 public:
@@ -384,7 +390,7 @@ public:
 	void func_for_VM(ExecutionContext& ctx) override {
 
 		if (varName.empty()) {
-			std::cout << "GET_VAR: empty name\n";
+			OutputDebugStringA("GET_VAR: empty name\n");
 			outValue = Value();
 			return;
 		}
@@ -394,7 +400,7 @@ public:
 			outValue = it->second;
 		}
 		else {
-			std::cout << "Variable not found: " << varName << "\n";
+			//std::cout << "Variable not found: " << varName << "\n";
 			outValue = Value();
 		}
 	}
@@ -410,7 +416,7 @@ public:
 	void func_for_VM(ExecutionContext& ctx) override {
 
 		if (varName.empty()) {
-			std::cout << "SET_VAR: empty name\n";
+			OutputDebugStringA("SET_VAR: empty name\n");
 			return;
 		}
 
@@ -671,30 +677,53 @@ public:
 	// ★ 编译注意：BuildDataLinks 需处理 targetPin=="inFrame"
 };
 
-// ============================================================
-// 执行引擎
-// ============================================================
+// 执行引擎，还有相关的节点
+
+class Delay_Node :public NODE {
+public:
+
+	Value* delaySeconds = nullptr;
+	void func_for_VM(ExecutionContext& ctx) {
+		if (!delaySeconds) return;
+		float sec = 0.0f;
+		
+		if (delaySeconds->type == ValueType::FLOAT)
+			sec = delaySeconds->f;
+
+		if (delaySeconds->type == ValueType::INT) {
+			sec = (float)delaySeconds->f;
+		}
+		ctx.paused = true;
+		ctx.wakeUpTime = GetTimeSeconds() + sec;    //这里是计算VM恢复的时间
+
+	}
+	//GetTimeSeconds这个函数能够获得函数运行了多少秒
+
+};
+
 
 inline void RunVM(ExecutionContext& ctx) {
 	while (ctx.current && ctx.running) {
 		NODE* node = ctx.current;
+		ctx.current = node->nextNode;   //一定要先赋值再进行执行，否则他的值可能会被覆盖
+
 		node->func_for_VM(ctx);
 		if (!node->nextNode) {
 			ctx.running = false;
 		}
-		ctx.current = node->nextNode;
 		ctx.lastExecuted = node;
-	}
-}
 
-// PlayWhenKeyNode::onInputEvent 定义
-inline void PlayWhenKeyNode::onInputEvent(const InputEvent& e) {
-	if (e.type == InputType::KeyDown && e.key == targetKey) {
-		ExecutionContext ctx;
-		ctx.current = this->nextNode;
-		RunVM(ctx);
+		//Pause  等待
+
+		if (ctx.paused) {
+			return;
+		}
 	}
 }
-//PlayWhenKeyNode::onInputEvent 里调用了 RunVM(ctx)，而 RunVM 的完整定义在所有节点类之后。
-// C++ 要求调用函数时必须能看到完整定义，所以 onInputEvent 的定义必须放在 RunVM 之后
+inline double GetTimeSeconds() {  //计算时间函数
+	using namespace std::chrono;
+	static auto start = high_resolution_clock::now();  //让时间点只会初始化一次
+	auto now = high_resolution_clock::now();
+	return duration<double>(now - start).count();  //这里是要进行时间单位的转换
+}
 //头文件里在类体外定义方法必须加 inline，否则多个.cpp include 同一个.h 时会报"多重定义"链接错误。

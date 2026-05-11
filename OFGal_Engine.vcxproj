@@ -130,6 +130,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BlueprintCompiler.cpp" />
+    <ClCompile Include="BlueprintScheduler.cpp" />
     <ClCompile Include="BMP_Reader.cpp" />
     <ClCompile Include="cmdDrawer.cpp" />
     <ClCompile Include="FileSystem.cpp" />
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BlueprintCompiler.h" />
+    <ClInclude Include="BlueprintScheduler.h" />
     <ClInclude Include="BMP_Reader.h" />
     <ClInclude Include="cmdDrawer.h" />
     <ClInclude Include="CompiledBlueprint.h" />
@@ -166,11 +168,9 @@
     <ClInclude Include="FrameProcessing.cuh" />
     <ClInclude Include="GameVM.h" />
     <ClInclude Include="InputCollector.h" />
-    <ClInclude Include="InputEvent.h" />
     <ClInclude Include="InputSystem.h" />
     <ClInclude Include="Json_BPData_ReadWrite.h" />
     <ClInclude Include="Json_LevelData_ReadWrite.h" />
-    <ClInclude Include="KeyCode.h" />
     <ClInclude Include="ProjectStructureGetter.h" />
     <ClInclude Include="RenderingSystem.h" />
     <ClInclude Include="SharedTypes.h" />
