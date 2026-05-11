@@ -13,6 +13,7 @@
 // ============================================================
 // 前向声明
 // ============================================================
+KeyCode StringToKeyCode(const std::string& str);
 class NODE;  // ExecutionContext 需要 NODE* 成员
 
 // 执行上下文（必须在 NODE 之前定义，因为 NODE::func_for_VM 需要 ExecutionContext 完整类型）
@@ -679,27 +680,7 @@ public:
 
 // 执行引擎，还有相关的节点
 
-class Delay_Node :public NODE {
-public:
 
-	Value* delaySeconds = nullptr;
-	void func_for_VM(ExecutionContext& ctx) {
-		if (!delaySeconds) return;
-		float sec = 0.0f;
-		
-		if (delaySeconds->type == ValueType::FLOAT)
-			sec = delaySeconds->f;
-
-		if (delaySeconds->type == ValueType::INT) {
-			sec = (float)delaySeconds->f;
-		}
-		ctx.paused = true;
-		ctx.wakeUpTime = GetTimeSeconds() + sec;    //这里是计算VM恢复的时间
-
-	}
-	//GetTimeSeconds这个函数能够获得函数运行了多少秒
-
-};
 
 
 inline void RunVM(ExecutionContext& ctx) {
