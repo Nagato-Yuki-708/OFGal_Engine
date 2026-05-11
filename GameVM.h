@@ -343,7 +343,7 @@ public:
 	void func_for_VM(ExecutionContext& ctx) override {
 
 		if (varName.empty()) {
-			std::cout << "GET_VAR: empty name\n";
+			OutputDebugStringA("GET_VAR: empty name\n");
 			outValue = Value();
 			return;
 		}
@@ -353,7 +353,7 @@ public:
 			outValue = it->second;
 		}
 		else {
-			std::cout << "Variable not found: " << varName << "\n";
+			//std::cout << "Variable not found: " << varName << "\n";
 			outValue = Value();
 		}
 	}
@@ -369,7 +369,7 @@ public:
 	void func_for_VM(ExecutionContext& ctx) override {
 
 		if (varName.empty()) {
-			std::cout << "SET_VAR: empty name\n";
+			OutputDebugStringA("SET_VAR: empty name\n");
 			return;
 		}
 

@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{366698b5-82ff-49c2-bf3c-f134de66ee34}</ProjectGuid>
-    <RootNamespace>NodeViewer</RootNamespace>
+    <ProjectGuid>{0919ab6c-63db-4abb-991b-cf2993b7e7d5}</ProjectGuid>
+    <RootNamespace>TextBlock</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -102,7 +102,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,19 +123,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="InputCollector.cpp" />
-    <ClCompile Include="InputSystem.cpp" />
-    <ClCompile Include="Json_BPData_ReadWrite.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="NodeViewer.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Debug.h" />
-    <ClInclude Include="InputCollector.h" />
-    <ClInclude Include="InputSystem.h" />
-    <ClInclude Include="Json_BPData_ReadWrite.h" />
-    <ClInclude Include="NodeViewer.h" />
-    <ClInclude Include="SharedTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -106,7 +106,7 @@ Value Node_ADD::compute(const Value& a, const Value& b) {
 		return Value::makeString(a.s + b.s);
 	}
 
-	std::cout << "Add type error\n";
+	OutputDebugStringA("Add type error\n");
 	return Value();
 }
 Value Node_Sub::compute(const Value& a, const Value& b) {
@@ -138,7 +138,7 @@ Value Node_Div::compute(const Value& a, const Value& b) {
 	float fb = (b.type == ValueType::INT) ? b.i : b.f;
 
 	if (fb == 0.0f) {
-		std::cout << "Divide by zero!\n";
+		OutputDebugStringA("Divide by zero!\n");
 		return Value();
 	}
 
