@@ -39,6 +39,9 @@
     <ClCompile Include="Json_BPData_ReadWrite.cpp">
       <Filter>Source Files\readJson</Filter>
     </ClCompile>
+    <ClCompile Include="NodeViewer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Debug.h">
@@ -55,6 +58,9 @@
     </ClInclude>
     <ClInclude Include="Json_BPData_ReadWrite.h">
       <Filter>Header Files\readJson</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeViewer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

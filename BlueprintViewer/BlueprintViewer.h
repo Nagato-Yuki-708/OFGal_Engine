@@ -11,8 +11,11 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <set>
 #include <unordered_set>
+#include <algorithm> // for std::find
 #include <utility>  // for std::pair
+#include <conio.h>
 
 static const char* RESET = "\x1b[0m";
 static const char* CYAN = "\x1b[36m";
@@ -33,8 +36,11 @@ private:
 
     int currentEntryNodeId;
     int currentEntryIndex = 0;
-    int selectedNodeId1;
-    int selectedNodeId2;
+    int selectedNodeId1 = -1;
+    int selectedNodeId2 = -1;
+
+    // ---- 当前执行流的节点顺序（先序） ----
+    std::vector<int> m_flowNodeOrder;
 
     // ---- 同步对象 ----
     HANDLE hLoadBPEvent;
@@ -57,6 +63,11 @@ private:
     // ---- 子进程句柄 ----
     std::vector<HANDLE> childProcesses;
 
+    // ---- 与 NodeViewer 通信（节点移动通知） ----
+    HANDLE hNodeMoveEvent;      // 自动重置事件
+    HANDLE hNodeIdMapping;      // 共享内存文件映射句柄
+    int* pNodeIdSharedMem;    // 共享内存视图指针（指向两个 int）
+
 private:
     void ConfigureConsole();
     void ClearScreen();
@@ -64,6 +75,7 @@ private:
     void FlushInputBuffer();
     void BuildAndPrintHelpText();
     void AdjustBufferSize();
+    void ScrollToTheTop();
 
     std::string WideToUTF8(const std::wstring& wstr) const;
     int GetConsoleColumns();
@@ -72,6 +84,9 @@ private:
 
     // 启动子进程（新控制台窗口）
     bool LaunchChildProcess(const std::wstring& exePath);
+
+    // 工具：计算字符串中可见字符的长度（忽略ANSI转义序列）
+    static size_t VisibleLength(const std::string& s);
 
 private:
     static constexpr int maxNodeNameLength = 21;
@@ -84,17 +99,35 @@ private:
         std::vector<std::pair<std::string, std::unique_ptr<ExecTreeNode>>> branches; // 分支标签 -> 子树
     };
 
-    // 渲染结果
-    struct RenderBlock {
-        std::vector<std::string> lines;
-        int centerCol; // 框中心相对于 lines 的列索引
+    // 着色指令：在指定行中，从 startCol 到 endCol 应用某种颜色
+    struct ColorSpan {
+        int startCol;      // 可见列起始（包含）
+        int endCol;        // 可见列结束（不包含）
+        const char* color; // ANSI 颜色码，如 CYAN
     };
+
+    struct RenderBlock {
+        std::vector<std::string> lines;            // 纯文本行（无 ANSI）
+        int centerCol;
+        // 按行索引存储该行中需要着色的区间
+        std::vector<std::vector<ColorSpan>> spans; // spans[row] 即该行的着色列表
+    };
+    static void AddColorSpan(RenderBlock& block, int row, int startVisCol, int endVisCol, const char* color);
+    static void MergeChildSpans(RenderBlock& parent, const RenderBlock& child,
+        int rowOffset, int colOffset);
+    static const char* GetTopBorderColor(int nodeId, int sel1, int sel2);
+    static const char* GetBottomBorderColor(int nodeId, int sel1, int sel2);
 
     // 辅助函数
     std::vector<int> GetEntryNodeIds() const;
     std::vector<std::pair<int, std::string>> GetEntryNodes() const;
     std::unique_ptr<ExecTreeNode> BuildExecTree(int startNodeId) const;
-    RenderBlock RenderExecTree(const ExecTreeNode* node, std::unordered_set<int>& visited, int depth) const;
+    void CollectNodeOrder(const ExecTreeNode* node, std::vector<int>& order) const;
+    RenderBlock RenderExecTree(const ExecTreeNode* node,
+        std::unordered_set<int>& visited,
+        int depth,
+        int selectedId1,
+        int selectedId2) const;
     void PrintRenderBlock(const RenderBlock& block);
 
     void MoveSelection1Up();
@@ -103,8 +136,8 @@ private:
     void MoveSelection2Down();
     void MoveToNextFlow();
     void MoveToPrevFlow();
-    void OnDelete();
-    void Edit();
+    bool OnDelete();
+    bool Edit();
     void BuildAndPrintCurrentFlow();
 
     void PrintEntryNodes();

@@ -128,12 +128,14 @@
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="Json_BPData_ReadWrite.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="NodeViewer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Debug.h" />
     <ClInclude Include="InputCollector.h" />
     <ClInclude Include="InputSystem.h" />
     <ClInclude Include="Json_BPData_ReadWrite.h" />
+    <ClInclude Include="NodeViewer.h" />
     <ClInclude Include="SharedTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
