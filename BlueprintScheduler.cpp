@@ -54,3 +54,48 @@ void BlueprintScheduler::Tick() {     //这个是调度器执行函数，到时候主循环还要控
 	
 	}
 }
+
+void BlueprintScheduler::getBlueprint(LevelData* data) {
+	if (!data) return;
+
+	// 清空旧蓝图
+	blueprints.clear();
+
+	// 遍历场景根对象
+	for (auto& [name, obj] : data->objects) {
+
+		if (!obj) continue;
+
+		ScanObject(obj);
+	}
+}
+
+void BlueprintScheduler::ScanObject(ObjectData* obj) {
+	if (!obj) return;
+
+	// =========================
+	// 1. 检查当前对象是否有蓝图
+	// =========================
+
+	if (obj->Blueprint.has_value()) {
+
+		BlueprintCompiler compiler;
+
+		CompiledBlueprint* compiled =
+			compiler.Compile(ReadBPData(obj->Blueprint->Path));
+
+		if (compiled) {
+
+			blueprints.push_back(compiled);
+		}
+	}
+
+
+	for (auto& [name, child] : obj->objects) {
+
+		if (!child) continue;
+
+		ScanObject(child);
+	}
+
+}
