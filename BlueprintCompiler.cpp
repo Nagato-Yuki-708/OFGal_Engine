@@ -52,6 +52,7 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建
 	if (n.type == "SetVariable")       return new SET_VAR();
 
 	//std::cout << "Unknown node: " << n.type << "\n";
+	DEBUG_LOG("Unknown node: " << n.type << "\n");
 	return nullptr;
 }
 
@@ -100,7 +101,6 @@ void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
 				branch->falseNode = B;
 			}
 		}
-		auto* whileNode = dynamic_cast<While_Node*>(A);
 		if (whileNode) {
 			if (link.sourcePin == "OEXEC_Loop") {
 				whileNode->loopBodyNode = B;
@@ -114,7 +114,7 @@ void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
 
 
 
-void BlueprintCompiler::InitNodeData(const BlueprintData& data) {     
+void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 	for (auto& n : data.nodes) {
 		NODE* node = currentCompiled->nodeMap[n.id];
 		if (auto* bin = dynamic_cast<BinaryOpNode*>(node)) {  //如果是运算节点，那么就给他们的输入输出数据分配空间
@@ -125,7 +125,7 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 			}
 		}
 		if (auto* st = dynamic_cast<SetTransforNode*>(node)) {
-		
+
 		}
 
 		if (auto* timer = dynamic_cast<PlayPerNMsNode*>(node)) {
@@ -189,11 +189,193 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 			}
 		}
 
+		// =========================
+		// PrintText
+		// =========================
+		if (auto* printText = dynamic_cast<PrintText_Node*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "Text" && pin.literal.has_value()) {
+					printText->text = new Value();
+					*printText->text = Value::makeString(pin.literal.value());
+				}
+			}
+		}
+
+		// =========================
+		// Render
+		// =========================
+		if (auto* render = dynamic_cast<Render_Node*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "samplingMethod" && pin.literal.has_value()) {
+					render->samplingMethod = new Value();
+					*render->samplingMethod = Value::makeInt(std::stoi(pin.literal.value()));
+				}
+				if (pin.name == "msaaMultiple" && pin.literal.has_value()) {
+					render->msaaMultiple = new Value();
+					*render->msaaMultiple = Value::makeInt(std::stoi(pin.literal.value()));
+				}
+			}
+		}
+
+		// =========================
+		// FrameProcess - 解析用户自定义参数
+		// =========================
+		if (auto* frameProc = dynamic_cast<FrameProcess_Node*>(node)) {
+			// 解析引脚字面量
+			for (auto& pin : n.pins) {
+				if (pin.name == "ProcessOp" && pin.literal.has_value()) {
+					frameProc->processName = new Value();
+					*frameProc->processName = Value::makeString(pin.literal.value());
+				}
+			}
+			// 解析 properties 中的后处理参数
+			for (auto& prop : n.properties) {
+				// Bloom: "threshold,intensity,blurRadius,sigma"
+				if (prop.first == "Bloom") {
+					sscanf_s(prop.second.c_str(), "%f,%f,%d,%f",
+						&frameProc->bloom.threshold,
+						&frameProc->bloom.intensity,
+						&frameProc->bloom.blurRadius,
+						&frameProc->bloom.sigma);
+				}
+				// Blur: "radius,sigma,direction"
+				if (prop.first == "Blur") {
+					float radius_f;
+					sscanf_s(prop.second.c_str(), "%f,%f,%d",
+						&radius_f,
+						&frameProc->blur.sigma,
+						&frameProc->blur.direction);
+					frameProc->blur.radius = (int)radius_f;
+				}
+				// FXAA: "edgeThreshold,edgeThresholdMin,spanMax,reduceMul,reduceMin"
+				if (prop.first == "FXAA") {
+					sscanf_s(prop.second.c_str(), "%f,%f,%f,%f,%f",
+						&frameProc->fxaa.edgeThreshold,
+						&frameProc->fxaa.edgeThresholdMin,
+						&frameProc->fxaa.spanMax,
+						&frameProc->fxaa.reduceMul,
+						&frameProc->fxaa.reduceMin);
+				}
+				// SMAA: "edgeThreshold,maxSearchSteps,enableDiag"
+				if (prop.first == "SMAA") {
+					int enableDiagInt;
+					sscanf_s(prop.second.c_str(), "%f,%d,%d",
+						&frameProc->smaa.edgeThreshold,
+						&frameProc->smaa.maxSearchSteps,
+						&enableDiagInt);
+					frameProc->smaa.enableDiag = (enableDiagInt != 0);
+				}
+				// LensDistortion: "strength,centerX,centerY"
+				if (prop.first == "LensDistortion") {
+					sscanf_s(prop.second.c_str(), "%f,%f,%f",
+						&frameProc->lensDistortion.strength,
+						&frameProc->lensDistortion.centerX,
+						&frameProc->lensDistortion.centerY);
+				}
+				// ChromaticAberration: "strength,mode,centerX,centerY"
+				if (prop.first == "ChromaticAberration") {
+					sscanf_s(prop.second.c_str(), "%f,%d,%f,%f",
+						&frameProc->chromaticAberration.strength,
+						&frameProc->chromaticAberration.mode,
+						&frameProc->chromaticAberration.centerX,
+						&frameProc->chromaticAberration.centerY);
+				}
+				// Sharpen: "strength,radius,sigma"
+				if (prop.first == "Sharpen") {
+					float radius_f;
+					sscanf_s(prop.second.c_str(), "%f,%f,%f",
+						&frameProc->sharpen.strength,
+						&radius_f,
+						&frameProc->sharpen.sigma);
+					frameProc->sharpen.radius = (int)radius_f;
+				}
+				// FilmGrain: "intensity,grainSize,dynamic,frameId"
+				if (prop.first == "FilmGrain") {
+					int dynamicInt;
+					sscanf_s(prop.second.c_str(), "%f,%d,%d,%d",
+						&frameProc->filmGrain.intensity,
+						&frameProc->filmGrain.grainSize,
+						&dynamicInt,
+						&frameProc->filmGrain.frameId);
+					frameProc->filmGrain.dynamic = (dynamicInt != 0);
+				}
+				// Vignette: "intensity,innerRadius,outerRadius,centerX,centerY,exponent"
+				if (prop.first == "Vignette") {
+					sscanf_s(prop.second.c_str(), "%f,%f,%f,%f,%f,%f",
+						&frameProc->vignette.intensity,
+						&frameProc->vignette.innerRadius,
+						&frameProc->vignette.outerRadius,
+						&frameProc->vignette.centerX,
+						&frameProc->vignette.centerY,
+						&frameProc->vignette.exponent);
+				}
+				// ColorCorrection: "brightness,contrast,saturation,whiteBalance.x,whiteBalance.y,whiteBalance.z,hueShift"
+				if (prop.first == "ColorCorrection") {
+					sscanf_s(prop.second.c_str(), "%f,%f,%f,%f,%f,%f,%f",
+						&frameProc->colorCorrection.brightness,
+						&frameProc->colorCorrection.contrast,
+						&frameProc->colorCorrection.saturation,
+						&frameProc->colorCorrection.whiteBalance.x,
+						&frameProc->colorCorrection.whiteBalance.y,
+						&frameProc->colorCorrection.whiteBalance.z,
+						&frameProc->colorCorrection.hueShift);
+				}
+				// ColorGrading: "style,intensity,customColor.x,customColor.y,customColor.z"
+				if (prop.first == "ColorGrading") {
+					sscanf_s(prop.second.c_str(), "%d,%f,%f,%f,%f",
+						&frameProc->colorGrading.style,
+						&frameProc->colorGrading.intensity,
+						&frameProc->colorGrading.customColor.x,
+						&frameProc->colorGrading.customColor.y,
+						&frameProc->colorGrading.customColor.z);
+				}
+			}
+		}
+
+		// =========================
+		// ShowtheFrame
+		// =========================
+		if (auto* showFrame = dynamic_cast<ShowtheFrame_Node*>(node)) {
+			// 无需额外初始化
+		}
+
+		// =========================
+		// PlaySound
+		// =========================
+		if (auto* playSound = dynamic_cast<PlaySound_Node*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "Path" && pin.literal.has_value()) {
+					playSound->path = new Value();
+					*playSound->path = Value::makeString(pin.literal.value());
+				}
+				if (pin.name == "shouldLoop" && pin.literal.has_value()) {
+					playSound->loop = new Value();
+					*playSound->loop = Value::makeBool(pin.literal.value() == "true");
+				}
+				if (pin.name == "Volume" && pin.literal.has_value()) {
+					playSound->volume = new Value();
+					*playSound->volume = Value::makeFloat(std::stof(pin.literal.value()));
+				}
+			}
+		}
+
+		// =========================
+		// PauseSound
+		// =========================
+		if (auto* pauseSound = dynamic_cast<PauseSound_Node*>(node)) {
+			for (auto& pin : n.pins) {
+				if (pin.name == "Path" && pin.literal.has_value()) {
+					pauseSound->path = new Value();
+					*pauseSound->path = Value::makeString(pin.literal.value());
+				}
+			}
+		}
+
 	}
 }
 
 
-void BlueprintCompiler::BuildDataLinks(const  BlueprintData& data) {
+void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
 	for (auto& link : data.links) {
 
 		if (link.sourcePin == "exec" || link.sourcePin == "then") {
@@ -217,6 +399,15 @@ void BlueprintCompiler::BuildDataLinks(const  BlueprintData& data) {
 		}
 		else if (auto* set = dynamic_cast<SET_VAR*>(src)) {
 			out = &set->outValue;   // ✅ 支持链式
+		}
+		// =========================
+		// Render / FrameProcess / ShowtheFrame 输出
+		// =========================
+		else if (auto* render = dynamic_cast<Render_Node*>(src)) {
+			out = &render->outFrame;
+		}
+		else if (auto* frameProc = dynamic_cast<FrameProcess_Node*>(src)) {
+			out = &frameProc->outFrame;
 		}
 
 		// =========================
@@ -258,4 +449,72 @@ void BlueprintCompiler::BuildDataLinks(const  BlueprintData& data) {
 			if (link.targetPin == "Location_y") st->in_loc_y = out;
 			if (link.targetPin == "Location_z") st->in_loc_z = out;
 		}
+
+		// =========================
+		// PrintText
+		// =========================
+		if (auto* printText = dynamic_cast<PrintText_Node*>(dst)) {
+			if (link.targetPin == "Text" && out) {
+				printText->text = out;
+			}
+		}
+
+		// =========================
+		// Render
+		// =========================
+		if (auto* render = dynamic_cast<Render_Node*>(dst)) {
+			if (link.targetPin == "samplingMethod" && out) {
+				render->samplingMethod = out;
+			}
+			if (link.targetPin == "msaaMultiple" && out) {
+				render->msaaMultiple = out;
+			}
+		}
+
+		// =========================
+		// FrameProcess
+		// =========================
+		if (auto* frameProc = dynamic_cast<FrameProcess_Node*>(dst)) {
+			if (link.targetPin == "ProcessOp" && out) {
+				frameProc->processName = out;
+			}
+			if (link.targetPin == "FrameToProcess" && out) {
+				frameProc->inFrame = out;
+			}
+		}
+
+		// =========================
+		// ShowtheFrame
+		// =========================
+		if (auto* showFrame = dynamic_cast<ShowtheFrame_Node*>(dst)) {
+			if (link.targetPin == "Frame" && out) {
+				showFrame->inFrame = out;
+			}
+		}
+
+		// =========================
+		// PlaySound
+		// =========================
+		if (auto* playSound = dynamic_cast<PlaySound_Node*>(dst)) {
+			if (link.targetPin == "Path" && out) {
+				playSound->path = out;
+			}
+			if (link.targetPin == "shouldLoop" && out) {
+				playSound->loop = out;
+			}
+			if (link.targetPin == "Volume" && out) {
+				playSound->volume = out;
+			}
+		}
+
+		// =========================
+		// PauseSound
+		// =========================
+		if (auto* pauseSound = dynamic_cast<PauseSound_Node*>(dst)) {
+			if (link.targetPin == "Path" && out) {
+				pauseSound->path = out;
+			}
+		}
 	}
+}
+
