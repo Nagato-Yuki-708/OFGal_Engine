@@ -450,8 +450,8 @@ void VariablesViewer::Run() {
                         ClearScreen();
                         BuildAndPrintAll();
                     }
-                    break;
                     isEditing = false;
+                    break;
                 case KeyCode::E:
                     isEditing = true;
                     if (EditVar()) {
