@@ -100,3 +100,8 @@ void BlueprintScheduler::ScanObject(ObjectData* obj) {
 	}
 
 }
+
+void BlueprintScheduler::Start(LevelData* data) {
+	getBlueprint(data);
+	Tick();
+}

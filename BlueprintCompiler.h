@@ -90,6 +90,7 @@ static std::unordered_map<std::string, KeyCode> keyMap = {
 	{"MouseMiddle", KeyCode::MouseMiddle}
 };
 
+
 inline KeyCode StringToKeyCode(const std::string& str)
 {
 	auto it = keyMap.find(str);

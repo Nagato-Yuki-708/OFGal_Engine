@@ -15,6 +15,7 @@ public:
 	std::vector<NODE*> entryNodess;  //存储所有的入口节点
 	void Tick();    //逐帧调用，进行轮询
 	void getBlueprint(LevelData* data);
+	void Start(LevelData* data);
 private:
 	bool CanExecute(NODE* node);     //能够判断一个节点是否满足执行的条件
 	double GetTimeSeconds();    //获得当前的时间
