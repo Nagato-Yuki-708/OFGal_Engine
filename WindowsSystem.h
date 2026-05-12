@@ -7,6 +7,7 @@
 #include <vector>
 #include <functional>
 #include "SharedTypes.h"
+#include "_EventBus.h"
 
 class WindowsSystem {
 public:
@@ -48,6 +49,8 @@ private:
     bool CreateProcessEvent(const std::string& processKey, const std::string& eventName, bool initialState = false);
     void CleanupChildProcess(const std::string& processKey);
     std::string MakeGlobalName(const std::string& processKey, const std::string& suffix);
+
+    void ToTextBlock(const std::string& text, const std::string& name, int X, int Y, int cx, int cy);
 
     // 蓝图编辑器 IPC 初始化 / 销毁
     void CreateBPEditorIPC();
