@@ -1,5 +1,4 @@
 ﻿#include"BlueprintCompiler.h"
-#include "GameVM.h"
 #include<iostream>
 
 CompiledBlueprint* BlueprintCompiler::Compile(const BlueprintData& data){

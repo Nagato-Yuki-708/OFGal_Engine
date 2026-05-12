@@ -682,7 +682,6 @@ public:
 
 
 
-
 inline void RunVM(ExecutionContext& ctx) {
 	while (ctx.current && ctx.running) {
 		NODE* node = ctx.current;

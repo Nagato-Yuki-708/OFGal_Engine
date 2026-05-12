@@ -81,13 +81,12 @@ int main() {
 	SoundSystem* pSoundSystem = &SoundSystem::getInstance();
 	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
     WindowsSystem* pWindowsSystem = &WindowsSystem::getInstance(ProjectPath);		//仅本次设置路径有效
-	//GameVM* pGameVM = &GameVM::getInstance();		//由窗口管理系统持有
 
 	InputSystem inputSystem;
 	InputCollector collector(&inputSystem);
 	std::thread inputThread(InputThread, &collector);
 
-    pWindowsSystem->Run();      //死循环
+    //pWindowsSystem->Run();      //实际运行
 
  //content
 

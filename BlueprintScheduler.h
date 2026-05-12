@@ -11,17 +11,16 @@
 
 class BlueprintScheduler {
 public:
-	std::vector<CompiledBlueprint*> blueprints;  //´æ´¢ËùÓĞ±àÒëÖ®ºóµÄÀ¶Í¼
-	std::vector<NODE*> entryNodess;  //´æ´¢ËùÓĞµÄÈë¿Ú½Úµã
-	void Tick();    //ÖğÖ¡µ÷ÓÃ£¬½øĞĞÂÖÑ¯
+	std::vector<CompiledBlueprint*> blueprints;  //å­˜å‚¨æ‰€æœ‰ç¼–è¯‘ä¹‹åçš„è“å›¾
+	std::vector<NODE*> entryNodess;  //å­˜å‚¨æ‰€æœ‰çš„å…¥å£èŠ‚ç‚¹
+	void Tick();    //é€å¸§è°ƒç”¨ï¼Œè¿›è¡Œè½®è¯¢
 	void getBlueprint(LevelData* data);
+	void Start(LevelData* data);
 private:
-
-	void BindNodeOwner(ObjectData* obj);    //Õâ¸ö³ÌĞòÓÃÀ´°ó¶¨¶ÔÏóµÄÖ¸Õë
-	bool CanExecute(NODE* node);     //ÄÜ¹»ÅĞ¶ÏÒ»¸ö½ÚµãÊÇ·ñÂú×ãÖ´ĞĞµÄÌõ¼ş
-	double GetTimeSeconds();    //»ñµÃµ±Ç°µÄÊ±¼ä
-	void ScanObject(ObjectData* obj);  //ÓÃÀ´É¨ÃèËùÓĞµÄ×Ó¶ÔÏó
+	bool CanExecute(NODE* node);     //èƒ½å¤Ÿåˆ¤æ–­ä¸€ä¸ªèŠ‚ç‚¹æ˜¯å¦æ»¡è¶³æ‰§è¡Œçš„æ¡ä»¶
+	double GetTimeSeconds();    //è·å¾—å½“å‰çš„æ—¶é—´
+	void ScanObject(ObjectData* obj);  //ç”¨æ¥æ‰«ææ‰€æœ‰çš„å­å¯¹è±¡
 };
 
-extern InputSystem g_inputSystem;  //È«¾ÖÊäÈëÏµÍ³ÊµÀı
-extern LevelData* currentLevel;     //³¡¾°ÏµÍ³µÄÖ¸Õë£¨ÉùÃ÷£¬¶¨ÒåÔÚ.cppÎÄ¼şÖĞ£©£»
+extern InputSystem g_inputSystem;
+extern LevelData* currentLevel;

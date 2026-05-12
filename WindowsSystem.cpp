@@ -5,6 +5,11 @@
 #include <vector>
 
 WindowsSystem::WindowsSystem() {
+
+    _EventBus::getInstance().subscribe_PrintText(
+        [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
+            this->ToTextBlock(text, name, X, Y, cx, cy);
+        });
     /*
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
@@ -13,12 +18,22 @@ WindowsSystem::WindowsSystem() {
 
     CreateBPEditorIPC();
     */
+    // ---------- 按键绑定 ----------
+    m_inputSystem.SetGlobalCapture(false);
+    m_inputSystem.SetWindowHandle(GetConsoleWindow());
+
+    m_inputCollector.AddBinding({ 13, Modifier::None, KeyCode::Enter, true });
 }
 WindowsSystem::WindowsSystem(std::string path) {
     size_t len = path.size() + 1;
     currentProjectDirectory = new char[len];
     strcpy_s(currentProjectDirectory, len, path.c_str());
     
+    
+    _EventBus::getInstance().subscribe_PrintText(
+        [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
+            this->ToTextBlock(text, name, X, Y, cx, cy);
+        });
     /*
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
@@ -27,6 +42,11 @@ WindowsSystem::WindowsSystem(std::string path) {
 
     CreateBPEditorIPC();
     */
+    // ---------- 按键绑定 ----------
+    m_inputSystem.SetGlobalCapture(false);
+    m_inputSystem.SetWindowHandle(GetConsoleWindow());
+
+    m_inputCollector.AddBinding({ 13, Modifier::None, KeyCode::Enter, true });
 }
 
 WindowsSystem::~WindowsSystem() {
@@ -44,6 +64,7 @@ WindowsSystem::~WindowsSystem() {
         CloseHandle(m_hLevelTreeListPathUpdateEvent);
     }
     DestroyBPEditorIPC();
+    ClearTextBlocks();
     delete[] currentProjectDirectory;
 }
 
@@ -537,7 +558,7 @@ void WindowsSystem::Run() {
     const DWORD numEvents = 4;
 
     while (true) {
-        DWORD result = WaitForMultipleObjects(numEvents, events, FALSE, INFINITE);
+        DWORD result = WaitForMultipleObjects(numEvents, events, FALSE, 20);
         if (result == WAIT_OBJECT_0 + 3) // Exit 事件
             break;
 
@@ -574,7 +595,35 @@ void WindowsSystem::Run() {
             blockName = "OpenTextPath";
         }
         else {
-            continue;
+            bool shouldRun = false;
+            // ========== 输入轮询 ==========
+            if (!this->currentLevel) {
+                m_inputCollector.update();
+
+                std::vector<InputEvent> eventsCopy = m_inputSystem.getEvents();
+                m_inputSystem.clearEvent();
+
+                for (const auto& ev : eventsCopy) {
+                    if (ev.type == InputType::KeyDown) {
+                        switch (ev.key) {
+                        case KeyCode::Enter:
+                            shouldRun = true;
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+
+                if (shouldRun) {
+                    BlueprintScheduler vm;
+                    vm.Start(this->currentLevel);
+                }
+            }
+            else {
+                continue;
+            }
+
         }
 
         auto blockIt = info.sharedMems.find(blockName);
@@ -602,4 +651,146 @@ bool WindowsSystem::RefreshProjectStructureViewer() {
 
 bool WindowsSystem::CloseProjectStructureViewer() {
     return TerminateChildProcess("ProjectStructureViewer", 1000);
+}
+
+// 辅助函数：将 UTF-8 字符串转换为宽字符串
+static std::wstring Utf8ToWide(const std::string& utf8) {
+    if (utf8.empty()) return std::wstring();
+    int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
+    if (len <= 0) return std::wstring();
+    std::wstring wide(len - 1, L'\0');   // 长度已包含结尾 null，resize 时不需额外空间
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &wide[0], len);
+    return wide;
+}
+
+void WindowsSystem::ToTextBlock(const std::string& text, const std::string& name,
+    int X, int Y, int cx, int cy) {
+    const size_t MAX_WCHARS = 300;                     // 最多 300 个 UTF‑16 字符
+    const DWORD SHARED_MEM_SIZE = MAX_WCHARS * sizeof(wchar_t);
+
+    // 检查该 name 是否已有对应的子进程
+    auto itProc = m_hTextBlockProcess.find(name);
+    if (itProc != m_hTextBlockProcess.end()) {
+        // ===== 情况 1：进程已存在 =====
+        auto itMem = m_hTextBlockSharedMems.find(name);
+        auto itEv = m_hTextBlockEvents.find(name);
+        if (itMem == m_hTextBlockSharedMems.end() || itEv == m_hTextBlockEvents.end()) {
+            OutputDebugStringA("[TextBlock] Shared mem or event missing for existing process\n");
+            return;
+        }
+
+        // 转换为 UTF‑16 并截断
+        std::wstring wtext = Utf8ToWide(text);
+        if (wtext.length() > MAX_WCHARS) {
+            wtext.resize(MAX_WCHARS);
+        }
+        // 写入时需包含结尾 null，所以字节数为 (len+1)*sizeof(wchar_t)
+        size_t bytesToWrite = (wtext.length() + 1) * sizeof(wchar_t);
+        if (bytesToWrite > SHARED_MEM_SIZE) {
+            bytesToWrite = SHARED_MEM_SIZE;            // 防御性保护
+        }
+
+        // 映射共享内存视图并写入
+        void* pView = MapViewOfFile(itMem->second, FILE_MAP_WRITE, 0, 0, bytesToWrite);
+        if (!pView) {
+            OutputDebugStringA("[TextBlock] MapViewOfFile failed\n");
+            return;
+        }
+        memcpy(pView, wtext.c_str(), bytesToWrite);
+        UnmapViewOfFile(pView);
+
+        // 激活事件，通知子进程有新文本
+        SetEvent(itEv->second);
+
+    }
+    else {
+        // ===== 情况 2：首次调用，需要启动子进程 =====
+        // 将 name 转换为宽字符串以便构造命令行
+        std::wstring wname = Utf8ToWide(name);
+        std::wstring exePath = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\TextBlock.exe";
+
+        // 构建命令行：cmd /c "exePath" name X Y cx cy
+        std::wstring cmdLine = L"cmd.exe /c \"" + exePath + L"\" " +
+            wname + L" " +
+            std::to_wstring(X) + L" " +
+            std::to_wstring(Y) + L" " +
+            std::to_wstring(cx) + L" " +
+            std::to_wstring(cy);
+        std::vector<wchar_t> cmdBuffer(cmdLine.begin(), cmdLine.end());
+        cmdBuffer.push_back(L'\0');
+
+        STARTUPINFOW si = { sizeof(STARTUPINFOW) };
+        PROCESS_INFORMATION pi = { 0 };
+        DWORD creationFlags = CREATE_NEW_CONSOLE;       // 分配独立控制台窗口
+
+        BOOL success = CreateProcessW(
+            nullptr,               // 从命令行解析可执行文件
+            cmdBuffer.data(),
+            nullptr, nullptr,
+            FALSE,
+            creationFlags,
+            nullptr, nullptr,
+            &si, &pi
+        );
+
+        if (!success) {
+            OutputDebugStringA(("[TextBlock] CreateProcessW failed, error: " +
+                std::to_string(GetLastError())).c_str());
+            return;
+        }
+
+        CloseHandle(pi.hThread);                        // 只需保留进程句柄
+        m_hTextBlockProcess[name] = pi.hProcess;
+
+        // 创建自动重置事件（初始无信号）
+        std::wstring eventGlobalName = L"Global\\OFGal_Engine_TextBlock_" + wname + L"_PrintText";
+        HANDLE hEvent = CreateEventW(nullptr, FALSE, FALSE, eventGlobalName.c_str());
+        if (!hEvent) {
+            OutputDebugStringA("[TextBlock] CreateEvent failed\n");
+        }
+        m_hTextBlockEvents[name] = hEvent;
+
+        // 创建共享内存（大小足以容纳 300 个 UTF‑16 字符）
+        std::wstring memGlobalName = L"Global\\OFGal_Engine_TextBlock_" + wname + L"_SharedMem";
+        HANDLE hSharedMem = CreateFileMappingW(
+            INVALID_HANDLE_VALUE, nullptr,
+            PAGE_READWRITE,
+            0, SHARED_MEM_SIZE,
+            memGlobalName.c_str()
+        );
+        if (!hSharedMem) {
+            OutputDebugStringA("[TextBlock] CreateFileMapping failed\n");
+        }
+        m_hTextBlockSharedMems[name] = hSharedMem;
+
+        // 现在进程、事件、共享内存均已就绪，递归调用自身执行写入与通知
+        ToTextBlock(text, name, X, Y, cx, cy);
+    }
+}
+void WindowsSystem::ClearTextBlocks() {
+    // 1. 强制终止所有 TextBlock 子进程并关闭进程句柄
+    for (auto& pair : m_hTextBlockProcess) {
+        HANDLE hProcess = pair.second;
+        if (hProcess) {
+            TerminateProcess(hProcess, 0);
+            CloseHandle(hProcess);
+        }
+    }
+    m_hTextBlockProcess.clear();
+
+    // 2. 关闭所有事件句柄
+    for (auto& pair : m_hTextBlockEvents) {
+        if (pair.second) {
+            CloseHandle(pair.second);
+        }
+    }
+    m_hTextBlockEvents.clear();
+
+    // 3. 关闭所有共享内存句柄
+    for (auto& pair : m_hTextBlockSharedMems) {
+        if (pair.second) {
+            CloseHandle(pair.second);
+        }
+    }
+    m_hTextBlockSharedMems.clear();
 }
