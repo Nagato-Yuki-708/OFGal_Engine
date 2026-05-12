@@ -8,6 +8,9 @@
 #include <functional>
 #include "SharedTypes.h"
 #include "_EventBus.h"
+#include "InputSystem.h"
+#include "InputCollector.h"
+#include "BlueprintScheduler.h"
 
 class WindowsSystem {
 public:
@@ -51,10 +54,14 @@ private:
     std::string MakeGlobalName(const std::string& processKey, const std::string& suffix);
 
     void ToTextBlock(const std::string& text, const std::string& name, int X, int Y, int cx, int cy);
+    void ClearTextBlocks();
 
     // 蓝图编辑器 IPC 初始化 / 销毁
     void CreateBPEditorIPC();
     void DestroyBPEditorIPC();
+
+    InputSystem     m_inputSystem;
+    InputCollector  m_inputCollector = InputCollector(&m_inputSystem);
 
     LevelData* currentLevel = nullptr;
     char* currentProjectDirectory = nullptr;
@@ -74,4 +81,8 @@ private:
     HANDLE m_hBPEditorPathMap = NULL;
     char* m_pBPEditorPathView = nullptr;
     static const DWORD BPEDITOR_PATH_SIZE = 4096;
+
+    std::unordered_map<std::string, HANDLE> m_hTextBlockProcess;
+    std::unordered_map<std::string, HANDLE> m_hTextBlockEvents;
+    std::unordered_map<std::string, HANDLE> m_hTextBlockSharedMems;
 };
