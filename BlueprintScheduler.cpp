@@ -1,5 +1,8 @@
 #include "BlueprintScheduler.h"
 
+// 全局变量定义
+LevelData* currentLevel = nullptr;
+
 double BlueprintScheduler::GetTimeSeconds() {
 	using namespace std::chrono;
 	auto now = high_resolution_clock::now();

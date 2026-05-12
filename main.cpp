@@ -12,6 +12,8 @@
 #include "GameVM.h"
 #include "RenderingSystem.h"
 #include "WindowsSystem.h"
+#include "BlueprintScheduler.h"
+
 const std::vector<std::string>& members = { "yerundong7", "epc-sg","Nagato-Yuki-708" };
 void printWelcomeMessage(int version, const std::vector<std::string>& members) {
     system("cls");
@@ -79,15 +81,14 @@ int main() {
 	SoundSystem* pSoundSystem = &SoundSystem::getInstance();
 	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
     WindowsSystem* pWindowsSystem = &WindowsSystem::getInstance(ProjectPath);		//仅本次设置路径有效
-	//GameVM* pGameVM = &GameVM::getInstance();		//由窗口管理系统持有
 
 	InputSystem inputSystem;
 	InputCollector collector(&inputSystem);
 	std::thread inputThread(InputThread, &collector);
 
-    pWindowsSystem->Run();      //死循环
+    //pWindowsSystem->Run();      //实际运行
 
-    //content
+ //content
 
 	system("pause");
 	running = false;
