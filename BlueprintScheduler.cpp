@@ -7,7 +7,7 @@ double BlueprintScheduler::GetTimeSeconds() {
 	return ms / 1000.0;     
 }
 
-bool BlueprintScheduler::CanExecute(NODE* node) {      //Õâ¸öÊÇ¹Ø¼üµÄÅÐ¶Ïº¯Êý
+bool BlueprintScheduler::CanExecute(NODE* node) {      //è¿™ä¸ªæ˜¯å…³é”®çš„åˆ¤æ–­å‡½æ•°
 	if (auto* begin = dynamic_cast<BeginPlay_Node*>(node)) {
 		if (!begin->hasExecuted) {
 			begin->hasExecuted = true;
@@ -25,7 +25,7 @@ bool BlueprintScheduler::CanExecute(NODE* node) {      //Õâ¸öÊÇ¹Ø¼üµÄÅÐ¶Ïº¯Êý
 		return false;
 	}
 	if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
-		for (const auto& event : g_inputSystem.getEvents()) {
+		for (const auto& event : g_inputSystem->getEvents()) {
 			if (event.type != InputType::KeyDown) {
 				continue;
 			}
@@ -37,12 +37,12 @@ bool BlueprintScheduler::CanExecute(NODE* node) {      //Õâ¸öÊÇ¹Ø¼üµÄÅÐ¶Ïº¯Êý
 	}
 }
 
-void BlueprintScheduler::Tick() {     //Õâ¸öÊÇµ÷¶ÈÆ÷Ö´ÐÐº¯Êý£¬µ½Ê±ºòÖ÷Ñ­»·»¹Òª¿ØÖÆÒ»ÏÂÖ´ÐÐº¯ÊýµÄÊ¹ÓÃ¡£
+void BlueprintScheduler::Tick() {     //è¿™ä¸ªæ˜¯è°ƒåº¦å™¨æ‰§è¡Œå‡½æ•°ï¼Œåˆ°æ—¶å€™ä¸»å¾ªçŽ¯è¿˜è¦æŽ§åˆ¶ä¸€ä¸‹æ‰§è¡Œå‡½æ•°çš„ä½¿ç”¨ã€‚
 	for (auto bp : blueprints) {
 		if (!bp) continue;
 		for (auto* entry : bp->entryNodes) {
 			if (!entry) continue;
-			entryNodess.push_back(entry);  //½«ËùÓÐµÄÈë¿Ú½Úµã¶¼·ÅÔÚÒ»¸öÊý×éÀïÃæ
+			entryNodess.push_back(entry);  //å°†æ‰€æœ‰çš„å…¥å£èŠ‚ç‚¹éƒ½æ”¾åœ¨ä¸€ä¸ªæ•°ç»„é‡Œé¢
 		}
 	}
 	for (auto* entrys : entryNodess) {
@@ -58,50 +58,101 @@ void BlueprintScheduler::Tick() {     //Õâ¸öÊÇµ÷¶ÈÆ÷Ö´ÐÐº¯Êý£¬µ½Ê±ºòÖ÷Ñ­»·»¹Òª¿Ø
 void BlueprintScheduler::getBlueprint(LevelData* data) {
 	if (!data) return;
 
-	// Çå¿Õ¾ÉÀ¶Í¼
+	// æ¸…ç©ºæ—§è“å›¾
 	blueprints.clear();
 
-	// ±éÀú³¡¾°¸ù¶ÔÏó
+	entryNodess.clear(); //å¼€å§‹èŠ‚ç‚¹ä¹Ÿè¦æ¸…ç©º
+	// éåŽ†åœºæ™¯æ ¹å¯¹è±¡
 	for (auto& [name, obj] : data->objects) {
 
 		if (!obj) continue;
 
 		ScanObject(obj);
 	}
+	for (auto* bp : blueprints) {  //åŠ å…¥å¼€å§‹èŠ‚ç‚¹
+
+		if (!bp)
+			continue;
+
+		for (auto* entry : bp->entryNodes) {
+
+			if (!entry)
+				continue;
+
+			entryNodess.push_back(entry);
+		}
+	}
 }
 
 void BlueprintScheduler::ScanObject(ObjectData* obj) {
-	if (!obj) return;
+	if (!obj)
+		return;
 
-	// =========================
-	// 1. ¼ì²éµ±Ç°¶ÔÏóÊÇ·ñÓÐÀ¶Í¼
-	// =========================
-
+	// ç¼–è¯‘å½“å‰å¯¹è±¡è“å›¾
 	if (obj->Blueprint.has_value()) {
 
 		BlueprintCompiler compiler;
 
-		CompiledBlueprint* compiled = compiler.Compile(ReadBPData(obj->Blueprint->Path));
+		CompiledBlueprint* compiled =
+			compiler.Compile(
+				ReadBPData(obj->Blueprint->Path)
+			);
 
 		if (compiled) {
+
+			// ç»™æ‰€æœ‰èŠ‚ç‚¹ç»‘å®š owner
 			for (auto& pair : compiled->nodeMap) {
-				pair.second->owner = obj;   // °ó¶¨¶ÔÏóÖ¸Õë
+
+				pair.second->owner = obj;
 			}
+
 			blueprints.push_back(compiled);
 		}
 	}
 
-
+	// é€’å½’æ‰«æå­å¯¹è±¡
 	for (auto& [name, child] : obj->objects) {
 
-		if (!child) continue;
+		if (!child)
+			continue;
 
 		ScanObject(child);
 	}
 
 }
 
+
+
 void BlueprintScheduler::Start(LevelData* data) {
+	if (!data)
+		return;
+
+	currentLevel = data;
+
 	getBlueprint(data);
-	Tick();
+
+	isRunning = true;
+
+	//Tickä¸€å®šè¦æ‰§è¡Œå¾ˆå¤šæ¬¡
+	while (isRunning) {
+
+		// æ›´æ–°è¾“å…¥ç³»ç»Ÿ
+		g_inputCollector.update();
+
+		// æ‰§è¡Œè“å›¾
+		Tick();
+
+		// æ¸…ç©ºè¾“å…¥äº‹ä»¶
+		g_inputSystem->clearEvent();
+
+		// æŽ§åˆ¶å¸§çŽ‡
+		std::this_thread::sleep_for(
+			std::chrono::milliseconds(16)
+		);
+	}
+}
+
+void BlueprintScheduler::Stop() {
+
+	isRunning = false;
 }
