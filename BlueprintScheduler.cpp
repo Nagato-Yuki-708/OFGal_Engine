@@ -1,5 +1,8 @@
 #include "BlueprintScheduler.h"
 
+// å…¨å±€å˜é‡å®šä¹‰
+LevelData* currentLevel = nullptr;
+
 double BlueprintScheduler::GetTimeSeconds() {
 	using namespace std::chrono;
 	auto now = high_resolution_clock::now();
@@ -7,7 +10,7 @@ double BlueprintScheduler::GetTimeSeconds() {
 	return ms / 1000.0;     
 }
 
-bool BlueprintScheduler::CanExecute(NODE* node) {      //Õâ¸öÊÇ¹Ø¼üµÄÅĞ¶Ïº¯Êı
+bool BlueprintScheduler::CanExecute(NODE* node) {      //è¿™ä¸ªæ˜¯å…³é”®çš„åˆ¤æ–­å‡½æ•°
 	if (auto* begin = dynamic_cast<BeginPlay_Node*>(node)) {
 		if (!begin->hasExecuted) {
 			begin->hasExecuted = true;
@@ -37,12 +40,12 @@ bool BlueprintScheduler::CanExecute(NODE* node) {      //Õâ¸öÊÇ¹Ø¼üµÄÅĞ¶Ïº¯Êı
 	}
 }
 
-void BlueprintScheduler::Tick() {     //Õâ¸öÊÇµ÷¶ÈÆ÷Ö´ĞĞº¯Êı£¬µ½Ê±ºòÖ÷Ñ­»·»¹Òª¿ØÖÆÒ»ÏÂÖ´ĞĞº¯ÊıµÄÊ¹ÓÃ¡£
+void BlueprintScheduler::Tick() {     //è¿™ä¸ªæ˜¯è°ƒåº¦å™¨æ‰§è¡Œå‡½æ•°ï¼Œåˆ°æ—¶å€™ä¸»å¾ªç¯è¿˜è¦æ§åˆ¶ä¸€ä¸‹æ‰§è¡Œå‡½æ•°çš„ä½¿ç”¨ã€‚
 	for (auto bp : blueprints) {
 		if (!bp) continue;
 		for (auto* entry : bp->entryNodes) {
 			if (!entry) continue;
-			entryNodess.push_back(entry);  //½«ËùÓĞµÄÈë¿Ú½Úµã¶¼·ÅÔÚÒ»¸öÊı×éÀïÃæ
+			entryNodess.push_back(entry);  //å°†æ‰€æœ‰çš„å…¥å£èŠ‚ç‚¹éƒ½æ”¾åœ¨ä¸€ä¸ªæ•°ç»„é‡Œé¢
 		}
 	}
 	for (auto* entrys : entryNodess) {
@@ -58,10 +61,10 @@ void BlueprintScheduler::Tick() {     //Õâ¸öÊÇµ÷¶ÈÆ÷Ö´ĞĞº¯Êı£¬µ½Ê±ºòÖ÷Ñ­»·»¹Òª¿Ø
 void BlueprintScheduler::getBlueprint(LevelData* data) {
 	if (!data) return;
 
-	// Çå¿Õ¾ÉÀ¶Í¼
+	// æ¸…ç©ºæ—§è“å›¾
 	blueprints.clear();
 
-	// ±éÀú³¡¾°¸ù¶ÔÏó
+	// éå†åœºæ™¯æ ¹å¯¹è±¡
 	for (auto& [name, obj] : data->objects) {
 
 		if (!obj) continue;
@@ -74,7 +77,7 @@ void BlueprintScheduler::ScanObject(ObjectData* obj) {
 	if (!obj) return;
 
 	// =========================
-	// 1. ¼ì²éµ±Ç°¶ÔÏóÊÇ·ñÓĞÀ¶Í¼
+	// 1. æ£€æŸ¥å½“å‰å¯¹è±¡æ˜¯å¦æœ‰è“å›¾
 	// =========================
 
 	if (obj->Blueprint.has_value()) {
@@ -85,7 +88,7 @@ void BlueprintScheduler::ScanObject(ObjectData* obj) {
 
 		if (compiled) {
 			for (auto& pair : compiled->nodeMap) {
-				pair.second->owner = obj;   // °ó¶¨¶ÔÏóÖ¸Õë
+				pair.second->owner = obj;   // ç»‘å®šå¯¹è±¡æŒ‡é’ˆ
 			}
 			blueprints.push_back(compiled);
 		}

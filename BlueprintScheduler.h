@@ -24,4 +24,4 @@ private:
 };
 
 extern InputSystem g_inputSystem;  //全局输入系统实例
-extern LevelData* currentLevel = nullptr;   //场景系统的指针；
+extern LevelData* currentLevel;     //场景系统的指针（声明，定义在.cpp文件中）；
