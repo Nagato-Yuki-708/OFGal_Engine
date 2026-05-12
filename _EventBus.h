@@ -89,6 +89,8 @@ public:
     using applyColorCorrection_Handler = std::function<void(Frame&, float, float, float, float3, float)>;
     using applyColorGrading_Handler = std::function<void(Frame&, int, float, float3)>;
 
+    using PrintText_Handler = std::function < void(const std::string&, const std::string&, int, int, int, int) >;
+
 
     void subscribe_ReadLevelData(ReadLevelData_Handler handler);
     void subscribe_WriteLevelData(WriteLevelData_Handler handler);
@@ -157,6 +159,9 @@ public:
     void subscribe_applyColorGrading(applyColorGrading_Handler handler);
     void publish_applyColorGrading(Frame& frame, int style, float intensity, float3 customColor);
 
+    void subscribe_PrintText(PrintText_Handler handler);
+    void publish_PrintText(const std::string& text, const std::string& name, int X, int Y, int cx, int cy);
+
 
 private:
     _EventBus() = default;
@@ -201,5 +206,7 @@ private:
     std::vector<applySMAA_Handler> handlers_applySMAA;
     std::vector<applySharpen_Handler> handlers_applySharpen;
     std::vector<applyVignette_Handler> handlers_applyVignette;
+
+    std::vector<PrintText_Handler> handlers_PrintText;
 	// 其它订阅者类型，请像上面一样自行添加
 };

@@ -13,6 +13,7 @@
 // ============================================================
 // 前向声明
 // ============================================================
+KeyCode StringToKeyCode(const std::string& str);
 class NODE;  // ExecutionContext 需要 NODE* 成员
 
 // 执行上下文（必须在 NODE 之前定义，因为 NODE::func_for_VM 需要 ExecutionContext 完整类型）

@@ -5,6 +5,11 @@
 #include <vector>
 
 WindowsSystem::WindowsSystem() {
+
+    _EventBus::getInstance().subscribe_PrintText(
+        [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
+            this->ToTextBlock(text, name, X, Y, cx, cy);
+        });
     /*
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
@@ -19,6 +24,11 @@ WindowsSystem::WindowsSystem(std::string path) {
     currentProjectDirectory = new char[len];
     strcpy_s(currentProjectDirectory, len, path.c_str());
     
+    
+    _EventBus::getInstance().subscribe_PrintText(
+        [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
+            this->ToTextBlock(text, name, X, Y, cx, cy);
+        });
     /*
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
@@ -602,4 +612,8 @@ bool WindowsSystem::RefreshProjectStructureViewer() {
 
 bool WindowsSystem::CloseProjectStructureViewer() {
     return TerminateChildProcess("ProjectStructureViewer", 1000);
+}
+
+void WindowsSystem::ToTextBlock(const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
+
 }

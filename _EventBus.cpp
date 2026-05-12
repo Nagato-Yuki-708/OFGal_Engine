@@ -349,3 +349,15 @@ void _EventBus::subscribe_applyVignette(applyVignette_Handler handler)
 {
     handlers_applyVignette.push_back(handler);
 }
+
+void _EventBus::publish_PrintText(const std::string& text, const std::string& name, int X, int Y, int cx, int cy)
+{
+    for (auto& handler : handlers_PrintText)
+    {
+        handler(text, name, X, Y, cx, cy);
+    }
+}
+void _EventBus::subscribe_PrintText(PrintText_Handler handler)
+{
+    handlers_PrintText.push_back(handler);
+}
