@@ -2,35 +2,6 @@
 #include"SharedTypes.h"
 #include "GameVM.h"
 
-static std::unordered_map<std::string, KeyCode>
-g_keyMap = {            //这是用于获取输入的哈希表
-
-	{"A", KeyCode::A},
-	{"B", KeyCode::B},
-	{"C", KeyCode::C},
-
-	{"Space", KeyCode::Space},
-	{"Enter", KeyCode::Enter},
-
-	{"Left", KeyCode::Left},
-	{"Right", KeyCode::Right},
-
-	{"MouseLeft", KeyCode::MouseLeft},
-	{"MouseRight", KeyCode::MouseRight},
-
-};
-
-KeyCode StringToKeyCode(
-	const std::string& str) {
-
-	auto it = g_keyMap.find(str);
-
-	if (it != g_keyMap.end()) {
-		return it->second;
-	}
-
-	return KeyCode::Unknown;
-}
 
 Value calcBinary(const Value& a, const Value& b, char op) {
 	if (a.type == ValueType::INT && b.type == ValueType::INT) {

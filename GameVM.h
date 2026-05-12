@@ -679,27 +679,6 @@ public:
 
 // 执行引擎，还有相关的节点
 
-class Delay_Node :public NODE {
-public:
-
-	Value* delaySeconds = nullptr;
-	void func_for_VM(ExecutionContext& ctx) {
-		if (!delaySeconds) return;
-		float sec = 0.0f;
-		
-		if (delaySeconds->type == ValueType::FLOAT)
-			sec = delaySeconds->f;
-
-		if (delaySeconds->type == ValueType::INT) {
-			sec = (float)delaySeconds->f;
-		}
-		ctx.paused = true;
-		ctx.wakeUpTime = GetTimeSeconds() + sec;    //这里是计算VM恢复的时间
-
-	}
-	//GetTimeSeconds这个函数能够获得函数运行了多少秒
-
-};
 
 
 inline void RunVM(ExecutionContext& ctx) {
