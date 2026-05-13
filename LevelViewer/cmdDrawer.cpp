@@ -125,12 +125,28 @@ bool initializeConsoleDrawer() {
 		float scaleX = 1920.0f / 2560.0f;
 		float scaleY = 1080.0f / 1600.0f;
 		if (MAX_Window) {
+			/*
 			RECT rect;
 			if (GetWindowRect(MAX_Window, &rect)) {
 				int width = rect.right - rect.left;
 				int height = rect.bottom - rect.top;
 				scaleX = (float)width / 2560.0f;
 				scaleY = (float)height / 1600.0f;
+			}
+			*/
+			// 等待窗口有效
+			for (int retry = 0; retry < 20; ++retry) {
+				RECT rect;
+				if (GetWindowRect(MAX_Window, &rect)) {
+					int w = rect.right - rect.left;
+					int h = rect.bottom - rect.top;
+					if (w > 200 && h > 200) {
+						scaleX = (float)w / 2560.0f;
+						scaleY = (float)h / 1600.0f;
+						break;
+					}
+				}
+				Sleep(50);
 			}
 		}
 

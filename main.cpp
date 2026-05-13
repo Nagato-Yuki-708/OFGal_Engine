@@ -59,18 +59,12 @@ void printWelcomeMessage(int version, const std::vector<std::string>& members) {
 std::string GetProjectPath() {
     printWelcomeMessage(10001, members);
 	std::string ProjectPath = "";
-	std::cout << "Please enter the project path: (Input of the following paths is prohibited: C:\\Users\\UserName...)" << std::endl;
+	std::cout << "Please enter the project path: (Input of the following paths is prohibited: C:\\Users\\UserName...)\n" << std::endl;
 	std::cin >> ProjectPath;
 	system("cls");
 	return ProjectPath;
 }
-std::atomic<bool> running(true);    //创建原子变量，表示程序是否在运行
-void InputThread(InputCollector* collector) {
-    while (running) {
-        collector->update();
-    }
-    Sleep(20);
-}
+
 int main() {
 	std::string ProjectPath = GetProjectPath();
 
@@ -80,17 +74,9 @@ int main() {
 	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
     WindowsSystem* pWindowsSystem = &WindowsSystem::getInstance(ProjectPath);		//仅本次设置路径有效
 
-	InputSystem inputSystem;
-	InputCollector collector(&inputSystem);
-	std::thread inputThread(InputThread, &collector);
-
-    //pWindowsSystem->Run();      //实际运行
+    pWindowsSystem->Run();      //实际运行
 
     //content
-
-	system("pause");
-	running = false;
-	inputThread.join();  // 等待子线程结束
 
 	return 0;
 }

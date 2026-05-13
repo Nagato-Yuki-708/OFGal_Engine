@@ -33,7 +33,8 @@
         },
         "SubObjects": [
             "AjitaniHifumi",
-            "background"
+            "background",
+            "testText"
         ],
         "background": {
             "Picture": {
@@ -51,9 +52,6 @@
                     "y": 0.0
                 }
             },
-            "SubObjects": [
-                "leaf"
-            ],
             "Transform": {
                 "Location": {
                     "x": 0.0,
@@ -69,21 +67,27 @@
                 }
             }
         },
-        "leaf": {
-            "ParObject": "background",
-            "Picture": {
+        "testText": {
+            "Blueprint": {
+                "Path": "E:\\Projects\\C++Projects\\OFGal_Engine\\BA_imitate\\testVM.bp"
+            },
+            "Textblock": {
                 "Location": {
-                    "x": 0.0,
-                    "y": 0.0,
-                    "z": 0
+                    "x": 0,
+                    "y": 0
                 },
-                "Path": "",
-                "Rotation": {
-                    "r": 0.0
+                "Scale": {
+                    "x": 1.0,
+                    "y": 1.0
                 },
                 "Size": {
-                    "x": 0.0,
-                    "y": 0.0
+                    "x": 0,
+                    "y": 0
+                },
+                "Text": {
+                    "ANSI Print": false,
+                    "Font size": 0,
+                    "component": ""
                 }
             },
             "Transform": {

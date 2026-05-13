@@ -10,14 +10,14 @@ WindowsSystem::WindowsSystem() {
         [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
             this->ToTextBlock(text, name, X, Y, cx, cy);
         });
-    /*
+    
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
     
     OpenLevelTreeList();
 
     CreateBPEditorIPC();
-    */
+    
     // ---------- 按键绑定 ----------
     m_inputSystem.SetGlobalCapture(false);
     m_inputSystem.SetWindowHandle(GetConsoleWindow());
@@ -34,14 +34,14 @@ WindowsSystem::WindowsSystem(std::string path) {
         [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
             this->ToTextBlock(text, name, X, Y, cx, cy);
         });
-    /*
+    
     OpenProjectStructureViewer(exePath_ProjectStructureViewer.c_str());
     RefreshProjectStructureViewer();
 
     OpenLevelTreeList();
 
     CreateBPEditorIPC();
-    */
+    
     // ---------- 按键绑定 ----------
     m_inputSystem.SetGlobalCapture(false);
     m_inputSystem.SetWindowHandle(GetConsoleWindow());
@@ -66,6 +66,27 @@ WindowsSystem::~WindowsSystem() {
     DestroyBPEditorIPC();
     ClearTextBlocks();
     delete[] currentProjectDirectory;
+}
+
+// 将宽字符串转为 UTF-8 编码的 std::string
+std::string WideToUtf8(const std::wstring& wstr)
+{
+    if (wstr.empty()) return {};
+
+    int size_needed = WideCharToMultiByte(
+        CP_UTF8,                  // 目标编码 UTF-8
+        0,                        // 转换标志：0 表示快速转换，WC_ERR_INVALID_CHARS 可检测非法字符
+        wstr.c_str(),             // 源宽字符串
+        static_cast<int>(wstr.length()), // 源字符数
+        nullptr, 0, nullptr, nullptr);   // 第一次调用获取所需缓冲区大小
+
+    std::string result(size_needed, '\0');
+    WideCharToMultiByte(
+        CP_UTF8, 0,
+        wstr.c_str(), static_cast<int>(wstr.length()),
+        &result[0], size_needed,
+        nullptr, nullptr);
+    return result;
 }
 
 // ---------- 通用接口实现 ----------
@@ -597,7 +618,7 @@ void WindowsSystem::Run() {
         else {
             bool shouldRun = false;
             // ========== 输入轮询 ==========
-            if (!this->currentLevel) {
+            if (this->currentLevel) {
                 m_inputCollector.update();
 
                 std::vector<InputEvent> eventsCopy = m_inputSystem.getEvents();
@@ -616,6 +637,7 @@ void WindowsSystem::Run() {
                 }
 
                 if (shouldRun) {
+                    OutputDebugStringW(L"[OFGal_Engine] Start Running GameVM...\n");
                     BlueprintScheduler vm;
                     vm.Start(this->currentLevel);
                 }
@@ -633,6 +655,19 @@ void WindowsSystem::Run() {
             *targetPath = std::wstring(pWide);
             // 可选：输出调试信息或调用回调
             OutputDebugStringW((std::wstring(L"[OFGal_Engine] Opened file: ") + *targetPath + L"\n").c_str());
+
+            if (result == WAIT_OBJECT_0) {
+                //delete currentLevel;
+                std::string pathStr = WideToUtf8(*targetPath);
+                LevelData* loadedLevel = new LevelData(_EventBus::getInstance().publish_ReadLevelData(pathStr));
+                if (loadedLevel) {
+                    currentLevel = loadedLevel;
+                    OutputDebugStringA("[OFGal_Engine] Level data loaded and set as current.\n");
+                }
+                else {
+                    OutputDebugStringA("[OFGal_Engine] Failed to load level data.\n");
+                }
+            }
         }
     }
 }
@@ -707,7 +742,7 @@ void WindowsSystem::ToTextBlock(const std::string& text, const std::string& name
         // ===== 情况 2：首次调用，需要启动子进程 =====
         // 将 name 转换为宽字符串以便构造命令行
         std::wstring wname = Utf8ToWide(name);
-        std::wstring exePath = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\TextBlock.exe";
+        std::wstring exePath = exePath_TextBlock;
 
         // 构建命令行：cmd /c "exePath" name X Y cx cy
         std::wstring cmdLine = L"cmd.exe /c \"" + exePath + L"\" " +

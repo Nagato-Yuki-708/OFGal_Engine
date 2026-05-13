@@ -1,0 +1,126 @@
+{
+    "Events": [],
+    "InParameters": [],
+    "Links": [
+        {
+            "sourceNode": 0,
+            "sourcePin": "OEXEC",
+            "targetNode": 1,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 1,
+            "sourcePin": "OEXEC",
+            "targetNode": 2,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 2,
+            "sourcePin": "OEXEC",
+            "targetNode": 3,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 2,
+            "sourcePin": "Frame",
+            "targetNode": 3,
+            "targetPin": "Frame"
+        }
+    ],
+    "Name": "testVM",
+    "Nodes": [
+        {
+            "id": 0,
+            "pins": [
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {},
+            "type": "BeginPlay"
+        },
+        {
+            "id": 1,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "I",
+                    "literal": "hello world!",
+                    "name": "Text",
+                    "type": "string"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {},
+            "type": "PrintText"
+        },
+        {
+            "id": 2,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "O",
+                    "name": "Frame",
+                    "type": "frame"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {},
+            "type": "Render"
+        },
+        {
+            "id": 3,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "I",
+                    "name": "Frame",
+                    "type": "frame"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {},
+            "type": "ShowtheFrame"
+        }
+    ],
+    "OutParameters": [],
+    "Variables": [
+        {
+            "name": "num",
+            "type": "int",
+            "value": "1"
+        },
+        {
+            "name": "text",
+            "type": "string",
+            "value": "now is "
+        }
+    ],
+    "id": 1
+}

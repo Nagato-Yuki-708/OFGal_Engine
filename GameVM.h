@@ -250,13 +250,13 @@ public:
 		ObjectData* targetObj = ctx.selfObject ? ctx.selfObject : obj;
 
 		if (!targetObj) {
-			std::cout << "PrintText_Node: No target object\n";
+			OutputDebugStringA("PrintText_Node: No target object\n");
 			return;
 		}
 
 		// 检查对象是否有文本块组件
 		if (!targetObj->Textblock.has_value()) {
-			std::cout << "PrintText_Node: Object has no Textblock component\n";
+			OutputDebugStringA("PrintText_Node: Object has no Textblock component\n");
 			return;
 		}
 
@@ -286,7 +286,12 @@ public:
 		auto& textblock = targetObj->Textblock.value();
 		textblock.Text.component = textToPrint;
 
-		std::cout << "PrintText_Node: Updated text to: " << textToPrint << "\n";
+		_EventBus::getInstance().publish_PrintText(textToPrint, 
+			targetObj->name, 
+			textblock.Location.x, textblock.Location.y, 
+			textblock.Size.x, textblock.Size.y);
+
+		OutputDebugStringA("PrintText_Node: Updated text\n");
 	}
 };
 // ★ 编译注意：
