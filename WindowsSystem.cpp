@@ -618,7 +618,7 @@ void WindowsSystem::Run() {
         else {
             bool shouldRun = false;
             // ========== 输入轮询 ==========
-            if (this->currentLevel) {
+            if (this->m_currentLevel) {
                 m_inputCollector.update();
 
                 std::vector<InputEvent> eventsCopy = m_inputSystem.getEvents();
@@ -639,7 +639,7 @@ void WindowsSystem::Run() {
                 if (shouldRun) {
                     OutputDebugStringW(L"[OFGal_Engine] Start Running GameVM...\n");
                     BlueprintScheduler vm;
-                    vm.Start(this->currentLevel);
+                    vm.Start(this->m_currentLevel);
                 }
             }
             else {
@@ -661,7 +661,7 @@ void WindowsSystem::Run() {
                 std::string pathStr = WideToUtf8(*targetPath);
                 LevelData* loadedLevel = new LevelData(_EventBus::getInstance().publish_ReadLevelData(pathStr));
                 if (loadedLevel) {
-                    currentLevel = loadedLevel;
+                    m_currentLevel = loadedLevel;
                     OutputDebugStringA("[OFGal_Engine] Level data loaded and set as current.\n");
                 }
                 else {

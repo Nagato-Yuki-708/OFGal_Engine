@@ -1,8 +1,5 @@
 #include "BlueprintScheduler.h"
 
-// 全局变量定义
-LevelData* currentLevel = nullptr;
-
 double BlueprintScheduler::GetTimeSeconds() {
 	using namespace std::chrono;
 	auto now = high_resolution_clock::now();
@@ -28,7 +25,7 @@ bool BlueprintScheduler::CanExecute(NODE* node) {      //这个是关键的判�
 		return false;
 	}
 	if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
-		for (const auto& event : g_inputSystem->getEvents()) {
+		for (const auto& event : m_inputSystem.getEvents()) {
 			if (event.type != InputType::KeyDown) {
 				continue;
 			}
@@ -130,7 +127,10 @@ void BlueprintScheduler::Start(LevelData* data) {
 	if (!data)
 		return;
 
-	currentLevel = data;
+	m_currentLevel = data;
+
+	m_inputSystem.SetGlobalCapture(false);		// 后续改为true
+	m_inputSystem.SetWindowHandle(GetConsoleWindow());
 
 	getBlueprint(data);
 
@@ -140,13 +140,13 @@ void BlueprintScheduler::Start(LevelData* data) {
 	while (isRunning) {
 
 		// 更新输入系统
-		g_inputCollector.update();
+		m_inputCollector.update();
 
 		// 执行蓝图
 		Tick();
 
 		// 清空输入事件
-		g_inputSystem->clearEvent();
+		m_inputSystem.clearEvent();
 
 		// 控制帧率
 		std::this_thread::sleep_for(

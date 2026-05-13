@@ -63,7 +63,7 @@ private:
     InputSystem     m_inputSystem;
     InputCollector  m_inputCollector = InputCollector(&m_inputSystem);
 
-    LevelData* currentLevel = nullptr;
+    LevelData* m_currentLevel = nullptr;
     char* currentProjectDirectory = nullptr;
     std::wstring exePath_ProjectStructureViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\ProjectStructureViewer.exe";
     std::wstring exePath_LevelTreeList = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\LevelTreeList.exe";
