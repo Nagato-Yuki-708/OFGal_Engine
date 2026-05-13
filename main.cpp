@@ -12,6 +12,8 @@
 #include "GameVM.h"
 #include "RenderingSystem.h"
 #include "WindowsSystem.h"
+#include "BlueprintScheduler.h"
+
 const std::vector<std::string>& members = { "yerundong7", "epc-sg","Nagato-Yuki-708" };
 void printWelcomeMessage(int version, const std::vector<std::string>& members) {
     system("cls");
@@ -76,7 +78,7 @@ int main() {
 
     pWindowsSystem->Run();      //实际运行
 
-    //content
+ //content
 
 	return 0;
 }

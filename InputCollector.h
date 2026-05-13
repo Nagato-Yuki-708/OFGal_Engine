@@ -10,14 +10,14 @@ public:
     InputCollector(InputSystem* system);
     void update();
 
-    // ×¢²áÒ»¸ö°´¼ü°ó¶¨
+    // æ³¨å†Œä¸€ä¸ªæŒ‰é”®ç»‘å®š
     void AddBinding(const KeyBinding& binding);
 
 private:
     InputSystem* inputsystem;
 
     std::vector<KeyBinding> m_bindings;
-    std::unordered_map<int, bool> m_keyStates;   // ¼ÇÂ¼¸÷ĞéÄâ¼üÇ°Ò»Ö¡×´Ì¬
+    std::unordered_map<int, bool> m_keyStates;   // è®°å½•å„è™šæ‹Ÿé”®å‰ä¸€å¸§çŠ¶æ€
 
     bool GetKeyState(int vk) const;
     bool GetPrevKeyState(int vk) const;

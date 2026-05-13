@@ -14,13 +14,16 @@ public:
 	std::vector<CompiledBlueprint*> blueprints;  //存储所有编译之后的蓝图
 	std::vector<NODE*> entryNodess;  //存储所有的入口节点
 	void Tick();    //逐帧调用，进行轮询
-	void getBlueprint(LevelData* data);
-	void Start(LevelData* data);
+	void getBlueprint(LevelData* data);    //用来加入蓝图
+	void Start(LevelData* data);        //预想中的一键启动函数
+	void Stop();
 private:
+	bool isRunning = false;  //用于判断运行的状态
 	bool CanExecute(NODE* node);     //能够判断一个节点是否满足执行的条件
 	double GetTimeSeconds();    //获得当前的时间
 	void ScanObject(ObjectData* obj);  //用来扫描所有的子对象
 };
 
-extern InputSystem g_inputSystem;
-extern LevelData* currentLevel;
+extern InputSystem* g_inputSystem;  //全局输入系统实例
+extern LevelData* currentLevel = nullptr;   //场景系统的指针；
+extern InputCollector g_inputCollector(g_inputSystem);  //全局输入收集器实例

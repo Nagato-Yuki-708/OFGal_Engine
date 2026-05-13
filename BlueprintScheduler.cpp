@@ -1,5 +1,8 @@
 #include "BlueprintScheduler.h"
 
+// 全局变量定义
+LevelData* currentLevel = nullptr;
+
 double BlueprintScheduler::GetTimeSeconds() {
 	using namespace std::chrono;
 	auto now = high_resolution_clock::now();
@@ -25,7 +28,7 @@ bool BlueprintScheduler::CanExecute(NODE* node) {      //这个是关键的判�
 		return false;
 	}
 	if (auto* keyNode = dynamic_cast<PlayWhenKeyNode*>(node)) {
-		for (const auto& event : g_inputSystem.getEvents()) {
+		for (const auto& event : g_inputSystem->getEvents()) {
 			if (event.type != InputType::KeyDown) {
 				continue;
 			}
@@ -61,6 +64,7 @@ void BlueprintScheduler::getBlueprint(LevelData* data) {
 	// 清空旧蓝图
 	blueprints.clear();
 
+	entryNodess.clear(); //开始节点也要清空
 	// 遍历场景根对象
 	for (auto& [name, obj] : data->objects) {
 
@@ -68,40 +72,90 @@ void BlueprintScheduler::getBlueprint(LevelData* data) {
 
 		ScanObject(obj);
 	}
+	for (auto* bp : blueprints) {  //加入开始节点
+
+		if (!bp)
+			continue;
+
+		for (auto* entry : bp->entryNodes) {
+
+			if (!entry)
+				continue;
+
+			entryNodess.push_back(entry);
+		}
+	}
 }
 
 void BlueprintScheduler::ScanObject(ObjectData* obj) {
-	if (!obj) return;
+	if (!obj)
+		return;
 
-	// =========================
-	// 1. 检查当前对象是否有蓝图
-	// =========================
-
+	// 编译当前对象蓝图
 	if (obj->Blueprint.has_value()) {
 
 		BlueprintCompiler compiler;
 
-		CompiledBlueprint* compiled = compiler.Compile(ReadBPData(obj->Blueprint->Path));
+		CompiledBlueprint* compiled =
+			compiler.Compile(
+				ReadBPData(obj->Blueprint->Path)
+			);
 
 		if (compiled) {
+
+			// 给所有节点绑定 owner
 			for (auto& pair : compiled->nodeMap) {
-				pair.second->owner = obj;   // 绑定对象指针
+
+				pair.second->owner = obj;
 			}
+
 			blueprints.push_back(compiled);
 		}
 	}
 
-
+	// 递归扫描子对象
 	for (auto& [name, child] : obj->objects) {
 
-		if (!child) continue;
+		if (!child)
+			continue;
 
 		ScanObject(child);
 	}
 
 }
 
+
+
 void BlueprintScheduler::Start(LevelData* data) {
+	if (!data)
+		return;
+
+	currentLevel = data;
+
 	getBlueprint(data);
-	Tick();
+
+	isRunning = true;
+
+	//Tick一定要执行很多次
+	while (isRunning) {
+
+		// 更新输入系统
+		g_inputCollector.update();
+
+		// 执行蓝图
+		Tick();
+
+		// 清空输入事件
+		g_inputSystem->clearEvent();
+
+		// 控制帧率
+		std::this_thread::sleep_for(
+			std::chrono::milliseconds(16)
+		);
+	}
+}
+
+void BlueprintScheduler::Stop() {
+
+	isRunning = false;
 }
