@@ -57,8 +57,8 @@ private:
     bool isEditing = false;
 
     // ---- 子进程路径 ----
-    std::wstring exePath_NodeViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\NodeViewer.exe";
-    std::wstring exePath_VariablesViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\VariablesViewer.exe";
+    std::wstring exePath_NodeViewer = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\NodeViewer.exe";
+    std::wstring exePath_VariablesViewer = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\VariablesViewer.exe";
 
     // ---- 子进程句柄 ----
     std::vector<HANDLE> childProcesses;

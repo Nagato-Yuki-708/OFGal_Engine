@@ -86,7 +86,7 @@ private:
     std::string m_currentLevelPath;
     std::wstring m_currentLevelPathW; // 宽字符路径，共享内存用
 
-    std::wstring exePath_DetailViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\DetailViewer.exe";
+    std::wstring exePath_DetailViewer = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\DetailViewer.exe";
 
     std::vector<DisplayNode> m_displayNodes;
     int m_selectedIndex;

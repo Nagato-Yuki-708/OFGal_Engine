@@ -41,6 +41,7 @@ public:
 	NODE* nextNode = nullptr;
 	NODE* loopNode = nullptr;    //这里记录了循环的节点
 	ObjectData* owner = nullptr;   //所属对象指针（可选，视节点类型而定）
+	LevelData* level = nullptr;        //所属场景指针（可选，视节点类型而定）
 
 	// ★ 编译注意：所有节点统一签名 void func_for_VM(ExecutionContext& ctx)
 	//   RunVM 在调用前将 ctx.current 默认设为 node->nextNode
@@ -105,7 +106,7 @@ public:
 	bool hasExecuted = false;
 
 	void func_for_VM(ExecutionContext& ctx) override {
-		
+		DEBUG_LOG(" Begin\n");  
 	}
 
 };
@@ -243,10 +244,11 @@ public:
 class PrintText_Node : public NODE {
 public:
 	Value* text = nullptr;
-	ObjectData* obj = nullptr;  // ★ 由编译器绑定
+	ObjectData* obj = nullptr;  // ★ 由编译器绑定 ,没有绑定到
 
 	void func_for_VM(ExecutionContext& ctx) override {
 		// 优先使用 ctx.selfObject，其次使用节点绑定的 obj
+		DEBUG_LOG(" Enter print \n");
 		ObjectData* targetObj = ctx.selfObject ? ctx.selfObject : obj;
 
 		if (!targetObj) {
@@ -291,7 +293,7 @@ public:
 			textblock.Location.x, textblock.Location.y, 
 			textblock.Size.x, textblock.Size.y);
 
-		OutputDebugStringA("PrintText_Node: Updated text\n");
+		DEBUG_LOG(" Success print \n");
 	}
 };
 // ★ 编译注意：
@@ -455,8 +457,10 @@ public:
 	Value outFrame;   // 执行成功后覆盖为 FRAME
 
 	void func_for_VM(ExecutionContext& ctx) override {
+		DEBUG_LOG("Start Running Render\n");
+		levelData = level;
 		if (!levelData) return;   // 无场景数据，跳过渲染
-
+		DEBUG_LOG("After skip \n");
 		// 读取采样方法（默认 BICUBIC）
 		int methodVal = (samplingMethod && samplingMethod->type == ValueType::INT)
 			? samplingMethod->i : 2;
@@ -489,7 +493,7 @@ public:
 		}
 		
 		outFrame = Value::makeFrame(f);
-
+		DEBUG_LOG("Success Running Render \n");
 		// 单出口节点，不修改 ctx.current，RunVM 自动走 nextNode
 	}
 	// ★ 编译注意：
@@ -597,7 +601,9 @@ public:
 
 	void func_for_VM(ExecutionContext& ctx) override {
 		// 1. 检查输入帧有效性
+		DEBUG_LOG("Start Running Show \n");
 		if (!inFrame || inFrame->type != ValueType::FRAME) {
+			DEBUG_LOG("NO Render \n");
 			outFrame = inFrame ? *inFrame : Value();
 			return;
 		}
@@ -664,6 +670,7 @@ public:
 				outFrame.frame, colorGrading.style, colorGrading.intensity,
 				colorGrading.customColor);
 		}
+		DEBUG_LOG("After Running Show \n");
 		// 未知名称 → 透传原始帧（outFrame 已是 inFrame 的拷贝，无需额外操作）
 
 		// 单出口节点，不修改 ctx.current，RunVM 自动走 nextNode
@@ -689,12 +696,16 @@ public:
 
 inline void RunVM(ExecutionContext& ctx) {
 	while (ctx.current && ctx.running) {
+
+		DEBUG_LOG("Enter VM \n");
 		NODE* node = ctx.current;
 		ctx.current = node->nextNode;   //一定要先赋值再进行执行，否则他的值可能会被覆盖
 
 		node->func_for_VM(ctx);
+		DEBUG_LOG(" After func \n");
 		if (!node->nextNode) {
 			ctx.running = false;
+			DEBUG_LOG(" Exit VM \n");
 		}
 		ctx.lastExecuted = node;
 
