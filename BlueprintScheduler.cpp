@@ -129,7 +129,7 @@ void BlueprintScheduler::Start(LevelData* data) {
 
 	m_currentLevel = data;
 
-	m_inputSystem.SetGlobalCapture(false);		// 后续改为true
+	m_inputSystem.SetGlobalCapture(true);
 	m_inputSystem.SetWindowHandle(GetConsoleWindow());
 	//这个地方加入调试信息
 	DEBUG_LOG(" Enter 1 \n");
