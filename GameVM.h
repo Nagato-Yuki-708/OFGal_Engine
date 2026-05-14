@@ -249,7 +249,7 @@ public:
 	void func_for_VM(ExecutionContext& ctx) override {
 		// 优先使用 ctx.selfObject，其次使用节点绑定的 obj
 		DEBUG_LOG(" Enter print \n");
-		ObjectData* targetObj = ctx.selfObject ? ctx.selfObject : obj;
+		ObjectData* targetObj = owner;
 
 		if (!targetObj) {
 			OutputDebugStringA("PrintText_Node: No target object\n");
@@ -311,6 +311,7 @@ public:
 	Value* volume = nullptr;  // ★ 新增：音量参数
 
 	void func_for_VM(ExecutionContext& ctx) override {
+		DEBUG_LOG("Enter Sound \n");
 		std::string soundPath = (path && path->type == ValueType::STRING) ? path->s : "";
 		bool shouldLoop       = (loop && loop->type == ValueType::BOOL)   ? loop->b : false;
 		float vol             = (volume && volume->type == ValueType::FLOAT) ? volume->f : 1.0f;
@@ -323,9 +324,11 @@ public:
 			// 通过 _EventBus 发布 PlaySoundEvent，SoundSystem 在构造时已订阅此事件
 			// 回调内执行 SoundSystem::playSound(playEvent.path, playEvent.loop)
 			// SoundSystem::playSound 使用 Windows MCI API 打开设备并播放
-			_EventBus::getInstance().publish_PlaySound(PlaySoundEvent{soundPath, shouldLoop});
+			_EventBus::getInstance().publish_PlaySound(PlaySoundEvent{soundPath, shouldLoop});   //路径有问题？
+			DEBUG_LOG("Enter Play \n");
 			// TODO: 传递音量参数到 SoundSystem
 		}
+		DEBUG_LOG("After Sound \n");
 		// 单出口节点，不修改 ctx.current，RunVM 自动走 nextNode
 	}
 	// ★ 编译注意：BuildDataLinks 需处理 targetPin=="path"/"loop"/"Volume"
