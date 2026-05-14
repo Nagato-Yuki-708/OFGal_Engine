@@ -71,20 +71,18 @@ void ConsoleManager::SetupWindow() {
 }
 
 void ConsoleManager::ClearScreen() {
-    if (m_vtSupported) {
-        WriteColored("\033[0m\033[2J\033[H");
-    }
-    else {
-        CONSOLE_SCREEN_BUFFER_INFO csbi;
-        if (GetConsoleScreenBufferInfo(m_hConsoleOut, &csbi)) {
-            DWORD size = csbi.dwSize.X * csbi.dwSize.Y;
-            COORD topLeft = { 0, 0 };
-            DWORD written;
-            FillConsoleOutputCharacter(m_hConsoleOut, ' ', size, topLeft, &written);
-            FillConsoleOutputAttribute(m_hConsoleOut, csbi.wAttributes, size, topLeft, &written);
-            SetConsoleCursorPosition(m_hConsoleOut, topLeft);
-        }
-    }
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (!GetConsoleScreenBufferInfo(hOut, &csbi)) return;
+
+    DWORD dwSize = csbi.dwSize.X * csbi.dwSize.Y;
+    DWORD dwWritten;
+    COORD coord = { 0, 0 };
+
+    FillConsoleOutputCharacterW(hOut, L' ', dwSize, coord, &dwWritten);
+    FillConsoleOutputAttribute(hOut, csbi.wAttributes, dwSize, coord, &dwWritten);
+    SetConsoleCursorPosition(hOut, coord);
 }
 
 void ConsoleManager::SetCursorPosition(int row, int col) {

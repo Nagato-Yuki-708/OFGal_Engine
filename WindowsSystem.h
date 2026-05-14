@@ -65,10 +65,10 @@ private:
 
     LevelData* m_currentLevel = nullptr;
     char* currentProjectDirectory = nullptr;
-    std::wstring exePath_ProjectStructureViewer = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\ProjectStructureViewer.exe";
-    std::wstring exePath_LevelTreeList = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\LevelTreeList.exe";
-    std::wstring exePath_BlueprintViewer = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\BlueprintViewer.exe";
-    std::wstring exePath_TextBlock = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\TextBlock.exe";
+    std::wstring exePath_ProjectStructureViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\ProjectStructureViewer.exe";
+    std::wstring exePath_LevelTreeList = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\LevelTreeList.exe";
+    std::wstring exePath_BlueprintViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\BlueprintViewer.exe";
+    std::wstring exePath_TextBlock = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\TextBlock.exe";
 
     std::unordered_map<std::string, ChildProcessInfo> childProcesses;
     std::wstring m_lastOpenedLevelPath;

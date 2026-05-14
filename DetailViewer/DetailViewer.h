@@ -81,5 +81,5 @@ private:
     bool ReadLineWithCancel(std::string& output);
 
     // ---- 路径 ----
-    std::wstring exePath_LevelViewer = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\LevelViewer.exe";
+    std::wstring exePath_LevelViewer = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\LevelViewer.exe";
 };

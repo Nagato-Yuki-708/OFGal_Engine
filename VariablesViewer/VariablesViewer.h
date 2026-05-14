@@ -7,6 +7,7 @@
 #include "InputCollector.h"
 #include "Debug.h"
 #include <iostream>
+#include <iomanip>
 
 static const char* RESET = "\x1b[0m";
 static const char* CYAN = "\x1b[36m";

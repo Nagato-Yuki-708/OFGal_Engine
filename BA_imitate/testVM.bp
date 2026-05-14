@@ -25,6 +25,36 @@
             "sourcePin": "Frame",
             "targetNode": 3,
             "targetPin": "Frame"
+        },
+        {
+            "sourceNode": 3,
+            "sourcePin": "OEXEC",
+            "targetNode": 4,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 4,
+            "sourcePin": "OEXEC",
+            "targetNode": 5,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 5,
+            "sourcePin": "OEXEC",
+            "targetNode": 6,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 4,
+            "sourcePin": "Frame",
+            "targetNode": 5,
+            "targetPin": "FrameToProcess"
+        },
+        {
+            "sourceNode": 5,
+            "sourcePin": "Frame",
+            "targetNode": 6,
+            "targetPin": "Frame"
         }
     ],
     "Name": "testVM",
@@ -88,6 +118,83 @@
         },
         {
             "id": 3,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "I",
+                    "name": "Frame",
+                    "type": "frame"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {},
+            "type": "ShowtheFrame"
+        },
+        {
+            "id": 4,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "O",
+                    "name": "Frame",
+                    "type": "frame"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {},
+            "type": "Render"
+        },
+        {
+            "id": 5,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "I",
+                    "literal": "Blur",
+                    "name": "ProcessOp",
+                    "type": "string"
+                },
+                {
+                    "io": "I",
+                    "name": "FrameToProcess",
+                    "type": "frame"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "O",
+                    "name": "Frame",
+                    "type": "frame"
+                }
+            ],
+            "properties": {},
+            "type": "FrameProcess"
+        },
+        {
+            "id": 6,
             "pins": [
                 {
                     "io": "I",

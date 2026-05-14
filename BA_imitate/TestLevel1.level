@@ -67,10 +67,30 @@
                 }
             }
         },
+        "testSubObj": {
+            "ParObject": "testText",
+            "Transform": {
+                "Location": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0
+                },
+                "Rotation": {
+                    "r": 0.0
+                },
+                "Scale": {
+                    "x": 1.0,
+                    "y": 1.0
+                }
+            }
+        },
         "testText": {
             "Blueprint": {
                 "Path": "E:\\Projects\\C++Projects\\OFGal_Engine\\BA_imitate\\testVM.bp"
             },
+            "SubObjects": [
+                "testSubObj"
+            ],
             "Textblock": {
                 "Location": {
                     "x": 0,
@@ -87,7 +107,7 @@
                 "Text": {
                     "ANSI Print": false,
                     "Font size": 0,
-                    "component": ""
+                    "component": "Nagato Yuki"
                 }
             },
             "Transform": {

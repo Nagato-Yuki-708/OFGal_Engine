@@ -103,8 +103,8 @@ private:
     static constexpr DWORD SHARED_MEM_SIZE_LARGE = 4096;
     static constexpr const char* PROCESS_KEY = "FolderViewer";
 
-    std::wstring exePath_YesOrNo = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\YesOrNo.exe";
-    std::wstring exePath_AddItem = L"E:\\project\\C++ VS\\Only_For_Gal(1)\\x64\\Debug\\AddItem.exe";
+    std::wstring exePath_YesOrNo = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\YesOrNo.exe";
+    std::wstring exePath_AddItem = L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\AddItem.exe";
 
     bool m_virtualTerminalEnabled;
     void EnableVirtualTerminal();

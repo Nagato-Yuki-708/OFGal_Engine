@@ -113,7 +113,19 @@ static bool SafeReadLine(std::string& out, const std::string& prompt, bool allow
 }
 
 void LevelTreeList::ClearScreen() {
-    std::cout << "\033[2J\033[H";
+    //std::cout << "\033[2J\033[H";
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (!GetConsoleScreenBufferInfo(hOut, &csbi)) return;
+
+    DWORD dwSize = csbi.dwSize.X * csbi.dwSize.Y;
+    DWORD dwWritten;
+    COORD coord = { 0, 0 };
+
+    FillConsoleOutputCharacterW(hOut, L' ', dwSize, coord, &dwWritten);
+    FillConsoleOutputAttribute(hOut, csbi.wAttributes, dwSize, coord, &dwWritten);
+    SetConsoleCursorPosition(hOut, coord);
 }
 
 bool LevelTreeList::CreateDetailViewerIPC() {
