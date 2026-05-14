@@ -154,6 +154,7 @@ void BlueprintScheduler::Start(LevelData* data) {
 			std::chrono::milliseconds(16)
 		);
 	}
+	m_inputSystem.SetGlobalCapture(false);
 }
 
 void BlueprintScheduler::Stop() {
