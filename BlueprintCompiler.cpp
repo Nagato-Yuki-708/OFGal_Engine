@@ -56,13 +56,17 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建
 }
 
 void BlueprintCompiler::BuildExecLinks(const BlueprintData& data) {
+	DEBUG_LOG("Enter BuildExecLinks \n");
 	for (auto& link : data.links) {
+		DEBUG_LOG("Enter Links \n");  //一共执行了4次
 		NODE* A = currentCompiled->nodeMap[link.sourceNode];
 		NODE* B = currentCompiled->nodeMap[link.targetNode];
 		if (!A || !B) continue;
-		if (link.sourcePin == "exec" || link.sourcePin == "then") {  //这里进行基础的链接
+		DEBUG_LOG("After continue \n");
+		if (link.sourcePin == "OEXEC" || link.sourcePin == "then") {  //这里进行基础的链接
 			A->nextNode = B;
 			B->lastNode = A;
+			DEBUG_LOG("Links \n");
 		}
 		auto* whileNode = dynamic_cast<While_Node*>(A);
 		if (whileNode && link.sourcePin == "OEXEC_Loop") {  //这里能够进行传导，将每一个节点都带上循环的属性
@@ -377,7 +381,7 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 void BlueprintCompiler::BuildDataLinks(const BlueprintData& data) {
 	for (auto& link : data.links) {
 
-		if (link.sourcePin == "exec" || link.sourcePin == "then") {
+		if (link.sourcePin == "OEXEC" || link.sourcePin == "then") {
 			continue;
 		}
 
