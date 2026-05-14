@@ -334,6 +334,7 @@ void DetailViewer::EditCurrentComponent() {
     ClearScreen();
     std::cout << "Editing " << CYAN << compName << RESET << " of object \""
         << m_currentObject->name << "\"\n";
+    std::cout << "Enter \"#skip#\" to skip this variable)\n\n";
     std::cout << "(Press Escape or enter \"#esc#\" to cancel at any time)\n\n";
 
     // 根据组件类型编辑各自的字段
@@ -348,48 +349,60 @@ void DetailViewer::EditCurrentComponent() {
         std::string input;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
         if (!input.empty()) {
-            try { temp.Location.x = std::stof(input); }
-            catch (...) { /* 忽略无效输入，保持原值 */ }
+            if (input != "#skip#") {
+                try { temp.Location.x = std::stof(input); }
+                catch (...) { /* 忽略无效输入，保持原值 */ }
+            }
         }
         // Location.y
         std::cout << YELLOW << "Location.y" << RESET << " = " << orig.Location.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
         if (!input.empty()) {
-            try { temp.Location.y = std::stof(input); }
-            catch (...) {}
+            if (input != "#skip#") {
+                try { temp.Location.y = std::stof(input); }
+                catch (...) {}
+            }
         }
         // Location.z
         std::cout << YELLOW << "Location.z" << RESET << " = " << orig.Location.z << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
         if (!input.empty()) {
-            try { temp.Location.z = std::stoi(input); }
-            catch (...) {}
+            if (input != "#skip#") {
+                try { temp.Location.z = std::stoi(input); }
+                catch (...) {}
+            }
         }
         // Rotation.r
         std::cout << YELLOW << "Rotation.r" << RESET << " = " << orig.Rotation.r << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
         if (!input.empty()) {
-            try { temp.Rotation.r = std::stof(input); }
-            catch (...) {}
+            if (input != "#skip#") {
+                try { temp.Rotation.r = std::stof(input); }
+                catch (...) {}
+            }
         }
         // Scale.x
         std::cout << YELLOW << "Scale.x" << RESET << " = " << orig.Scale.x << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
         if (!input.empty()) {
-            try { temp.Scale.x = std::stof(input); }
-            catch (...) {}
+            if (input != "#skip#") {
+                try { temp.Scale.x = std::stof(input); }
+                catch (...) {}
+            }
         }
         // Scale.y
         std::cout << YELLOW << "Scale.y" << RESET << " = " << orig.Scale.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
         if (!input.empty()) {
-            try { temp.Scale.y = std::stof(input); }
-            catch (...) {}
+            if (input != "#skip#") {
+                try { temp.Scale.y = std::stof(input); }
+                catch (...) {}
+            }
         }
 
         // 应用修改
@@ -420,40 +433,57 @@ void DetailViewer::EditCurrentComponent() {
         std::cout << "Enter new value: " << std::flush;
         std::string input;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) temp.Path = input;
+        if (!input.empty() && (input != "#skip#")) {
+            temp.Path = input;
+        }
         // Location.x
         std::cout << YELLOW << "Location.x" << RESET << " = " << orig.Location.x << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.x = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.x = std::stof(input); } catch (...) {} }
         // Location.y
         std::cout << YELLOW << "Location.y" << RESET << " = " << orig.Location.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.y = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.y = std::stof(input); } catch (...) {} }
         // Location.z
         std::cout << YELLOW << "Location.z" << RESET << " = " << orig.Location.z << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.z = std::stoi(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.z = std::stoi(input); } catch (...) {} }
         // Rotation.r
         std::cout << YELLOW << "Rotation.r" << RESET << " = " << orig.Rotation.r << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Rotation.r = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Rotation.r = std::stof(input); } catch (...) {} }
         // Size.x
         std::cout << YELLOW << "Size.x" << RESET << " = " << orig.Size.x << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Size.x = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Size.x = std::stof(input); } catch (...) {} }
         // Size.y
         std::cout << YELLOW << "Size.y" << RESET << " = " << orig.Size.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Size.y = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Size.y = std::stof(input); } catch (...) {} }
 
+        // 应用修改
         orig = temp;
-        std::cout << "\nComponent updated successfully.\n";
+        if (!m_currentLevelPath.empty()) {
+            if (WriteLevelData(m_currentLevelPath, *m_currentLevel)) {
+                std::cout << "\nComponent updated and saved to file.\n";
+                Sleep(1000);
+                if (m_hEventRenderPreview) {
+                    SetEvent(m_hEventRenderPreview); // 发出渲染预览通知
+                }
+            }
+            else {
+                std::cout << "\nComponent updated in memory, but failed to save file.\n";
+            }
+        }
+        else {
+            std::cout << "\nComponent updated in memory (no file path).\n";
+        }
         break;
     }
     case ComponentType::Textblock: {
@@ -465,37 +495,37 @@ void DetailViewer::EditCurrentComponent() {
         std::cout << "Enter new value: " << std::flush;
         std::string input;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.x = std::stoi(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.x = std::stoi(input); } catch (...) {} }
         // Location.y
         std::cout << YELLOW << "Location.y" << RESET << " = " << orig.Location.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.y = std::stoi(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.y = std::stoi(input); } catch (...) {} }
         // Size.x
         std::cout << YELLOW << "Size.x" << RESET << " = " << orig.Size.x << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Size.x = std::stoi(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Size.x = std::stoi(input); } catch (...) {} }
         // Size.y
         std::cout << YELLOW << "Size.y" << RESET << " = " << orig.Size.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Size.y = std::stoi(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Size.y = std::stoi(input); } catch (...) {} }
         // Text.component
         std::cout << YELLOW << "Text.component" << RESET << " = \"" << orig.Text.component << "\"\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) temp.Text.component = input;
+        if (!input.empty() && (input != "#skip#")) temp.Text.component = input;
         // Font_size
         std::cout << YELLOW << "Font Size" << RESET << " = " << orig.Text.Font_size << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Text.Font_size = std::stoi(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Text.Font_size = std::stoi(input); } catch (...) {} }
         // ANSI Print
         std::cout << YELLOW << "ANSI Print" << RESET << " = " << (orig.Text.ANSI_Print ? "true" : "false") << "\n";
         std::cout << "Enter new value (true/false): " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) {
+        if (!input.empty() && (input != "#skip#")) {
             std::string lower;
             lower.resize(input.size());
             std::transform(input.begin(), input.end(), lower.begin(), ::tolower);
@@ -505,15 +535,30 @@ void DetailViewer::EditCurrentComponent() {
         std::cout << YELLOW << "Scale.x" << RESET << " = " << orig.Scale.x << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Scale.x = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Scale.x = std::stof(input); } catch (...) {} }
         // Scale.y
         std::cout << YELLOW << "Scale.y" << RESET << " = " << orig.Scale.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Scale.y = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Scale.y = std::stof(input); } catch (...) {} }
 
+        // 应用修改
         orig = temp;
-        std::cout << "\nComponent updated successfully.\n";
+        if (!m_currentLevelPath.empty()) {
+            if (WriteLevelData(m_currentLevelPath, *m_currentLevel)) {
+                std::cout << "\nComponent updated and saved to file.\n";
+                Sleep(1000);
+                if (m_hEventRenderPreview) {
+                    SetEvent(m_hEventRenderPreview); // 发出渲染预览通知
+                }
+            }
+            else {
+                std::cout << "\nComponent updated in memory, but failed to save file.\n";
+            }
+        }
+        else {
+            std::cout << "\nComponent updated in memory (no file path).\n";
+        }
         break;
     }
     case ComponentType::TriggerArea: {
@@ -525,25 +570,40 @@ void DetailViewer::EditCurrentComponent() {
         std::cout << "Enter new value: " << std::flush;
         std::string input;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.x = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.x = std::stof(input); } catch (...) {} }
         // Location.y
         std::cout << YELLOW << "Location.y" << RESET << " = " << orig.Location.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Location.y = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Location.y = std::stof(input); } catch (...) {} }
         // Size.x
         std::cout << YELLOW << "Size.x" << RESET << " = " << orig.Size.x << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Size.x = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Size.x = std::stof(input); } catch (...) {} }
         // Size.y
         std::cout << YELLOW << "Size.y" << RESET << " = " << orig.Size.y << "\n";
         std::cout << "Enter new value: " << std::flush;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) { try { temp.Size.y = std::stof(input); } catch (...) {} }
+        if (!input.empty() && (input != "#skip#")) { try { temp.Size.y = std::stof(input); } catch (...) {} }
 
+        // 应用修改
         orig = temp;
-        std::cout << "\nComponent updated successfully.\n";
+        if (!m_currentLevelPath.empty()) {
+            if (WriteLevelData(m_currentLevelPath, *m_currentLevel)) {
+                std::cout << "\nComponent updated and saved to file.\n";
+                Sleep(1000);
+                if (m_hEventRenderPreview) {
+                    SetEvent(m_hEventRenderPreview); // 发出渲染预览通知
+                }
+            }
+            else {
+                std::cout << "\nComponent updated in memory, but failed to save file.\n";
+            }
+        }
+        else {
+            std::cout << "\nComponent updated in memory (no file path).\n";
+        }
         break;
     }
     case ComponentType::Blueprint: {
@@ -555,10 +615,25 @@ void DetailViewer::EditCurrentComponent() {
         std::cout << "Enter new value: " << std::flush;
         std::string input;
         if (!ReadLineWithCancel(input) || input == "#esc#") goto cancel;
-        if (!input.empty()) temp.Path = input;
+        if (!input.empty() && (input != "#skip#")) temp.Path = input;
 
+        // 应用修改
         orig = temp;
-        std::cout << "\nComponent updated successfully.\n";
+        if (!m_currentLevelPath.empty()) {
+            if (WriteLevelData(m_currentLevelPath, *m_currentLevel)) {
+                std::cout << "\nComponent updated and saved to file.\n";
+                Sleep(1000);
+                if (m_hEventRenderPreview) {
+                    SetEvent(m_hEventRenderPreview); // 发出渲染预览通知
+                }
+            }
+            else {
+                std::cout << "\nComponent updated in memory, but failed to save file.\n";
+            }
+        }
+        else {
+            std::cout << "\nComponent updated in memory (no file path).\n";
+        }
         break;
     }
     default:
