@@ -12,7 +12,6 @@ public:
 
     // 注册一个按键绑定
     void AddBinding(const KeyBinding& binding);
-
 private:
     InputSystem* inputsystem;
 

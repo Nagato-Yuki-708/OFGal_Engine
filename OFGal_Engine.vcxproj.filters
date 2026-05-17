@@ -114,6 +114,9 @@
     <ClCompile Include="BlueprintScheduler.cpp">
       <Filter>Source Files\GameVM</Filter>
     </ClCompile>
+    <ClCompile Include="VK.cpp">
+      <Filter>Source Files\InputSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMP_Reader.h">
@@ -181,6 +184,9 @@
     </ClInclude>
     <ClInclude Include="MyJson.h">
       <Filter>Header Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="VK.h">
+      <Filter>Header Files\InputSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

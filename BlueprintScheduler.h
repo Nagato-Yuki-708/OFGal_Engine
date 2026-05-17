@@ -2,12 +2,14 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <filesystem>
 #include "GameVM.h"
 #include "BlueprintCompiler.h"
 #include "InputCollector.h"
 #include "InputSystem.h"
 #include "WindowsSystem.h"
 #include "Json_BPData_ReadWrite.h"
+#include "VK.h"
 #include "Debug.h"
 
 class BlueprintScheduler {

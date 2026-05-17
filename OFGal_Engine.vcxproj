@@ -144,6 +144,7 @@
     <ClCompile Include="RenderingSystem.cpp" />
     <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="Value.cpp" />
+    <ClCompile Include="VK.cpp" />
     <ClCompile Include="WindowsSystem.cpp" />
     <ClCompile Include="_EventBus.cpp" />
   </ItemGroup>
@@ -177,6 +178,7 @@
     <ClInclude Include="SharedTypes.h" />
     <ClInclude Include="SoundEvents.h" />
     <ClInclude Include="SRP.cuh" />
+    <ClInclude Include="VK.h" />
     <ClInclude Include="WindowsSystem.h" />
     <ClInclude Include="_EventBus.h" />
     <ClInclude Include="SoundSystem.h" />
