@@ -342,6 +342,7 @@ void NodeViewer::BuildAndPrintAll() {
 
     // 传入各个节点对应的选中引脚索引
     printNode(node1, "1", selectedPinId1);
+    std::cout << std::endl;
     printNode(node2, "2", selectedPinId2);
 }
 

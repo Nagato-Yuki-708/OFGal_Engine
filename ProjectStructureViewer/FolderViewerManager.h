@@ -68,6 +68,6 @@ private:
     // 常量
     static constexpr DWORD SHARED_MEM_SIZE = 512; // MAX_PATH 足够
     static constexpr const char* PROCESS_KEY = "FolderViewer";
-    static constexpr const char* FOLDER_VIEWER_EXE_PATH =
-        "E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\FolderViewer.exe";
+    std::wstring FOLDER_VIEWER_EXE_PATH =
+        L"E:\\Projects\\C++Projects\\OFGal_Engine\\x64\\Debug\\FolderViewer.exe";
 };

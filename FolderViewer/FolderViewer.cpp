@@ -13,6 +13,22 @@
 
 namespace fs = std::filesystem;
 
+// 返回当前 exe 所在目录（包含结尾的 '\\'），例如 L"C:\\MyApp\\"
+std::wstring GetExeDirectory() {
+    wchar_t path[MAX_PATH];
+    DWORD length = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (length == 0 || length >= MAX_PATH) {
+        // 失败时回退到当前工作目录
+        return L".\\";
+    }
+    std::wstring fullPath(path, length);
+    size_t pos = fullPath.find_last_of(L"\\/");
+    if (pos != std::wstring::npos) {
+        return fullPath.substr(0, pos + 1);   // 包含结尾的反斜杠
+    }
+    return L".\\";
+}
+
 // 辅助：构建全局对象名称
 static std::string MakeGlobalName(const std::string& suffix) {
     return "Global\\OFGal_Engine_ProjectStructureViewer_FolderViewer_" + suffix;
@@ -85,6 +101,9 @@ FolderViewer::FolderViewer()
 
     EnableVirtualTerminal();
     DisableQuickEditMode();
+
+    exePath_YesOrNo = GetExeDirectory() + L"YesOrNo.exe";
+    exePath_AddItem = GetExeDirectory() + L"AddItem.exe";
 
     // === 调整当前控制台窗口的位置和大小 ===
     HWND hwndConsole = GetConsoleWindow();

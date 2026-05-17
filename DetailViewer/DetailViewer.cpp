@@ -21,6 +21,22 @@ static const char* CYAN = "\x1b[36m";
 static const char* YELLOW = "\x1b[33m";
 static const char* WHITE = "\x1b[37m";
 
+// 返回当前 exe 所在目录（包含结尾的 '\\'），例如 L"C:\\MyApp\\"
+std::wstring GetExeDirectory() {
+    wchar_t path[MAX_PATH];
+    DWORD length = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (length == 0 || length >= MAX_PATH) {
+        // 失败时回退到当前工作目录
+        return L".\\";
+    }
+    std::wstring fullPath(path, length);
+    size_t pos = fullPath.find_last_of(L"\\/");
+    if (pos != std::wstring::npos) {
+        return fullPath.substr(0, pos + 1);   // 包含结尾的反斜杠
+    }
+    return L".\\";
+}
+
 // 组件类型转字符串
 static const char* ComponentTypeToString(ComponentType type) {
     switch (type) {
@@ -48,6 +64,8 @@ DetailViewer::DetailViewer()
     SetWindowSizeAndPosition();
     SetConsoleTitleW(L"OFGal_Engine/DetailViewer");
     ConfigureConsole();
+
+    exePath_LevelViewer = GetExeDirectory() + L"LevelViewer.exe";
 
     m_hEventPathUpdate = OpenEventW(SYNCHRONIZE, FALSE, L"Global\\OFGal_Engine_LevelTreeList_DetailViewer_PathUpdate");
     m_hEventDataChanged = OpenEventW(SYNCHRONIZE, FALSE, L"Global\\OFGal_Engine_LevelTreeList_DetailViewer_DataChanged");

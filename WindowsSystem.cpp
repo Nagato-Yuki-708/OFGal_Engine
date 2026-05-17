@@ -4,7 +4,27 @@
 #include <cstring>
 #include <vector>
 
+// 返回当前 exe 所在目录（包含结尾的 '\\'），例如 L"C:\\MyApp\\"
+std::wstring GetExeDirectory() {
+    wchar_t path[MAX_PATH];
+    DWORD length = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (length == 0 || length >= MAX_PATH) {
+        // 失败时回退到当前工作目录
+        return L".\\";
+    }
+    std::wstring fullPath(path, length);
+    size_t pos = fullPath.find_last_of(L"\\/");
+    if (pos != std::wstring::npos) {
+        return fullPath.substr(0, pos + 1);   // 包含结尾的反斜杠
+    }
+    return L".\\";
+}
+
 WindowsSystem::WindowsSystem() {
+    exePath_ProjectStructureViewer = GetExeDirectory() + L"ProjectStructureViewer.exe";
+    exePath_LevelTreeList = GetExeDirectory() + L"LevelTreeList.exe";
+    exePath_BlueprintViewer= GetExeDirectory() + L"BlueprintViewer.exe";
+    exePath_TextBlock = GetExeDirectory() + L"TextBlock.exe";
 
     _EventBus::getInstance().subscribe_PrintText(
         [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {
@@ -28,7 +48,11 @@ WindowsSystem::WindowsSystem(std::string path) {
     size_t len = path.size() + 1;
     currentProjectDirectory = new char[len];
     strcpy_s(currentProjectDirectory, len, path.c_str());
-    
+
+    exePath_ProjectStructureViewer = GetExeDirectory() + L"ProjectStructureViewer.exe";
+    exePath_LevelTreeList = GetExeDirectory() + L"LevelTreeList.exe";
+    exePath_BlueprintViewer = GetExeDirectory() + L"BlueprintViewer.exe";
+    exePath_TextBlock = GetExeDirectory() + L"TextBlock.exe";
     
     _EventBus::getInstance().subscribe_PrintText(
         [this](const std::string& text, const std::string& name, int X, int Y, int cx, int cy) {

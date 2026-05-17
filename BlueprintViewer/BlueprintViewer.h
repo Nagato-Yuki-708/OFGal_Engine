@@ -1,7 +1,8 @@
 // Copyright 2026 Nagato-Yuki-708. All Rights Reserved.
 #pragma once
 #define NOMINMAX
-#include "SharedTypes.h"
+#include <functional>
+#include <memory>
 #include "Json_BPData_ReadWrite.h"
 #include "InputSystem.h"
 #include "InputCollector.h"
@@ -15,7 +16,10 @@
 #include <unordered_set>
 #include <algorithm> // for std::find
 #include <utility>  // for std::pair
+#include <iomanip>   // for std::setw
+#include <ranges>    // for std::views::keys
 #include <conio.h>
+#include "SharedTypes.h"
 
 static const char* RESET = "\x1b[0m";
 static const char* CYAN = "\x1b[36m";

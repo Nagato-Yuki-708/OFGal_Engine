@@ -4,6 +4,22 @@
 #include <cstring>
 #include <sstream>
 
+// 返回当前 exe 所在目录（包含结尾的 '\\'），例如 L"C:\\MyApp\\"
+std::wstring GetExeDirectory() {
+    wchar_t path[MAX_PATH];
+    DWORD length = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (length == 0 || length >= MAX_PATH) {
+        // 失败时回退到当前工作目录
+        return L".\\";
+    }
+    std::wstring fullPath(path, length);
+    size_t pos = fullPath.find_last_of(L"\\/");
+    if (pos != std::wstring::npos) {
+        return fullPath.substr(0, pos + 1);   // 包含结尾的反斜杠
+    }
+    return L".\\";
+}
+
 FolderViewerManager::FolderViewerManager()
     : m_hProcess(nullptr)
     , m_hThread(nullptr)
@@ -14,6 +30,7 @@ FolderViewerManager::FolderViewerManager()
     , m_hEventFolderChanged(nullptr)
     , m_hEventExit(nullptr)
 {
+    FOLDER_VIEWER_EXE_PATH = GetExeDirectory() + L"FolderViewer.exe";
 }
 
 FolderViewerManager::~FolderViewerManager() {
@@ -129,18 +146,19 @@ bool FolderViewerManager::Start(const std::string& initialPath) {
         m_pSharedView[SHARED_MEM_SIZE - 1] = '\0';
     }
 
-    // 构建命令行（FolderViewer.exe 可能需要接受一些参数，此处仅传递 exe 路径）
-    std::string cmdLine = std::string("\"") + FOLDER_VIEWER_EXE_PATH + "\"";
+    // 构建命令行（无需转义，直接使用宽字符串）
+    std::wstring cmdLine = L"\"" + FOLDER_VIEWER_EXE_PATH + L"\"";
 
-    STARTUPINFOA si = { sizeof(STARTUPINFOA) };
+    // 注意：CreateProcessW 可能会修改 cmdLine 的内容，所以不能直接传 c_str()
+    // 需要确保缓冲区可写。使用 &cmdLine[0]（C++11）或 cmdLine.data()（C++17）。
+    STARTUPINFOW si = { sizeof(STARTUPINFOW) };
     PROCESS_INFORMATION pi = { 0 };
 
-    // 创建新控制台窗口，标准输入输出自动关联到该窗口
     DWORD creationFlags = CREATE_NEW_CONSOLE;
 
-    BOOL success = CreateProcessA(
+    BOOL success = CreateProcessW(
         nullptr,
-        const_cast<LPSTR>(cmdLine.c_str()),
+        cmdLine.data(),       // 或 &cmdLine[0]，C++17 起 data() 返回非 const
         nullptr,
         nullptr,
         FALSE,

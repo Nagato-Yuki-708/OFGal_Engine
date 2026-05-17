@@ -13,6 +13,22 @@ extern InputSystem g_inputSystem;
 static const DWORD SHARED_PATH_BUFFER_SIZE = 1024;
 static const DWORD OBJECT_NAME_BUFFER_SIZE = 1024;
 
+// 返回当前 exe 所在目录（包含结尾的 '\\'），例如 L"C:\\MyApp\\"
+std::wstring GetExeDirectory() {
+    wchar_t path[MAX_PATH];
+    DWORD length = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (length == 0 || length >= MAX_PATH) {
+        // 失败时回退到当前工作目录
+        return L".\\";
+    }
+    std::wstring fullPath(path, length);
+    size_t pos = fullPath.find_last_of(L"\\/");
+    if (pos != std::wstring::npos) {
+        return fullPath.substr(0, pos + 1);   // 包含结尾的反斜杠
+    }
+    return L".\\";
+}
+
 // 辅助函数：将宽字符串转换为 UTF-8 字符串
 static std::string WstrToUtf8(const std::wstring& wstr) {
     if (wstr.empty()) return std::string();
@@ -47,6 +63,7 @@ LevelTreeList::LevelTreeList()
     , m_selectedIndex(0)
     , m_needRender(false)
 {
+    exePath_DetailViewer = GetExeDirectory() + L"DetailViewer.exe";
 }
 
 LevelTreeList::~LevelTreeList() {
