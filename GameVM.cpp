@@ -133,7 +133,7 @@ void SetTransforNode::func_for_VM(ExecutionContext& ctx) {
 }
 ObjectData* SetTransforNode::GetObjByName(const std::string& name) {
 	if (!level) return nullptr;
-	if (name == "") return nullptr;
+	if (name == "") return owner;
 
 	// 使用递归辅助 lambda
 	std::function<ObjectData* (ObjectData*)> findRecursive =
