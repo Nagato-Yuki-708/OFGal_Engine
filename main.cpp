@@ -62,7 +62,7 @@ void printWelcomeMessage(int version, const std::vector<std::string>& members) {
     std::cout << BORDER << std::endl;
 }
 std::string GetProjectPath() {
-    printWelcomeMessage(10002, members);
+    printWelcomeMessage(10003, members);
 	std::string ProjectPath = "";
 	std::cout << "Please enter the project path: (Input of the following paths is prohibited: C:\\Users\\UserName...)\n" << std::endl;
 	std::cin >> ProjectPath;
@@ -74,17 +74,17 @@ int main() {
 	std::string ProjectPath = GetProjectPath();
 
     if (!IsValidDirectory(ProjectPath)) {
-        std::cout << "\n Error: Invalid path" << std::endl;
+        std::cout << "\n Error: Invalid path\n" << std::endl;
         system("pause");
         return -1;
     }
-    if (IsRunningInWindowsTerminal()) {
-        std::cout << "\n Error: Running this program using Windows Terminal is not allowed\n   Please right - click the main program and run as administrator" << std::endl;
+    if (!IsTraditionalCmdConsole()) {
+        std::cout << "\n Error: Running this program using Windows Terminal is not allowed\n   Please right - click the main program and run as administrator\n   In order to start the program with the traditional cmd\n" << std::endl;
         system("pause");
         return -1;
     }
     if (!HasDiscreteNvidiaGPU()) {
-        std::cout << "\n Error: No available dedicated NVIDIA graphics card detected" << std::endl;
+        std::cout << "\n Error: No available dedicated NVIDIA graphics card detected\n" << std::endl;
         system("pause");
         return -1;
     }

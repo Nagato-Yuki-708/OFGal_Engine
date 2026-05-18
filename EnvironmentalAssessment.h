@@ -3,6 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <cstdlib>
 #include <filesystem>
+#include <windows.h>
 
 /// @brief 判断当前电脑是否拥有可供本软件使用的独立 NVIDIA 显卡
 /// @return true  存在至少一块独立的 NVIDIA GPU
@@ -41,19 +42,6 @@ bool HasDiscreteNvidiaGPU()
     return false;
 }
 
-bool IsRunningInWindowsTerminal()
-{
-    char* wtSession = nullptr;
-    size_t len = 0;
-    errno_t err = _dupenv_s(&wtSession, &len, "WT_SESSION");
-    if (err == 0 && wtSession != nullptr && wtSession[0] != '\0') {
-        free(wtSession);   // 释放分配的内存
-        return true;
-    }
-    free(wtSession);       // 即使为空也需释放（_dupenv_s 可能分配了空串的内存）
-    return false;
-}
-
 /// @brief 检查给定路径是否为一个存在的目录
 /// @param path 要验证的路径字符串
 /// @return true  路径非空，且对应一个存在的目录
@@ -69,4 +57,21 @@ bool IsValidDirectory(const std::string& path)
         return false;
 
     return std::filesystem::exists(status) && std::filesystem::is_directory(status);
+}
+
+/// @brief 判断当前进程的控制台窗口是否是传统的 cmd.exe 控制台
+/// @return true  传统控制台（conhost.exe）
+///         false 其他终端（Windows Terminal, VSCode, ConEmu 等），或无控制台窗口
+bool IsTraditionalCmdConsole()
+{
+    HWND consoleWnd = GetConsoleWindow();
+    if (consoleWnd == NULL)
+        return false;           // 没有控制台窗口（例如 GUI 应用）
+
+    char className[64] = { 0 };
+    if (GetClassNameA(consoleWnd, className, sizeof(className)) == 0)
+        return false;           // 获取类名失败
+
+    // 传统控制台类名固定为 "ConsoleWindowClass"
+    return (strcmp(className, "ConsoleWindowClass") == 0);
 }
