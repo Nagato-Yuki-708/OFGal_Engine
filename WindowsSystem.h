@@ -9,6 +9,7 @@
 #include "SharedTypes.h"
 #include "_EventBus.h"
 #include "InputSystem.h"
+#include "SoundSystem.h"
 #include "InputCollector.h"
 #include "BlueprintScheduler.h"
 

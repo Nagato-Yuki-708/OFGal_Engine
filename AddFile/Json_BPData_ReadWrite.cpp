@@ -7,18 +7,17 @@
 namespace fs = std::filesystem;
 
 // ========== Pin 序列化 ==========
-void to_json(json& j, const Pin& v) {
-    j = json{
-        {"name", v.name},
-        {"io", v.io},
-        {"type", v.type}
-    };
+void to_json(MyJson& j, const Pin& v) {
+    j = MyJson();
+    j["name"] = v.name;
+    j["io"] = v.io;
+    j["type"] = v.type;
     if (v.literal.has_value()) {
         j["literal"] = v.literal.value();
     }
 }
 
-void from_json(const json& j, Pin& v) {
+void from_json(const MyJson& j, Pin& v) {
     j.at("name").get_to(v.name);
     j.at("io").get_to(v.io);
     j.at("type").get_to(v.type);
@@ -31,16 +30,23 @@ void from_json(const json& j, Pin& v) {
 }
 
 // ========== Node 序列化 ==========
-void to_json(json& j, const Node& v) {
-    j = json{
-        {"id", v.id},
-        {"type", v.type},
-        {"pins", v.pins},
-        {"properties", v.properties}
-    };
+void to_json(MyJson& j, const Node& v) {
+    j = MyJson();
+    j["id"] = v.id;
+    j["type"] = v.type;
+
+    // pins: vector<Pin> 需要通过 to_json 转换为 MyJson
+    MyJson pinsJson;
+    to_json(pinsJson, v.pins);          // 使用通用的 vector<T> to_json
+    j["pins"] = std::move(pinsJson);
+
+    // properties: map<string,string> 需要通过 to_json 转换
+    MyJson propsJson;
+    to_json(propsJson, v.properties);   // 使用通用的 map<K,V> to_json
+    j["properties"] = std::move(propsJson);
 }
 
-void from_json(const json& j, Node& v) {
+void from_json(const MyJson& j, Node& v) {
     j.at("id").get_to(v.id);
     j.at("type").get_to(v.type);
     j.at("pins").get_to(v.pins);
@@ -48,59 +54,55 @@ void from_json(const json& j, Node& v) {
 }
 
 // ========== Variable 序列化 ==========
-void to_json(json& j, const Variable& v) {
-    j = json{
-        {"name", v.name},
-        {"type", v.type},
-        {"value", v.value}
-    };
+void to_json(MyJson& j, const Variable& v) {
+    j = MyJson();
+    j["name"] = v.name;
+    j["type"] = v.type;
+    j["value"] = v.value;
 }
 
-void from_json(const json& j, Variable& v) {
+void from_json(const MyJson& j, Variable& v) {
     j.at("name").get_to(v.name);
     j.at("type").get_to(v.type);
     j.at("value").get_to(v.value);
 }
 
 // ========== Parameter 序列化 ==========
-void to_json(json& j, const Parameter& v) {
-    j = json{
-        {"name", v.name},
-        {"type", v.type},
-        {"defaultValue", v.defaultValue}
-    };
+void to_json(MyJson& j, const Parameter& v) {
+    j = MyJson();
+    j["name"] = v.name;
+    j["type"] = v.type;
+    j["defaultValue"] = v.defaultValue;
 }
 
-void from_json(const json& j, Parameter& v) {
+void from_json(const MyJson& j, Parameter& v) {
     j.at("name").get_to(v.name);
     j.at("type").get_to(v.type);
     j.at("defaultValue").get_to(v.defaultValue);
 }
 
 // ========== Event 序列化 ==========
-void to_json(json& j, const Event& v) {
-    j = json{
-        {"Event_Name", v.event_name},   // 固定使用事件名称键
-        {"id", v.id}
-    };
+void to_json(MyJson& j, const Event& v) {
+    j = MyJson();
+    j["Event_Name"] = v.event_name;
+    j["id"] = v.id;
 }
 
-void from_json(const json& j, Event& v) {
-    j.at("Event_Name").get_to(v.event_name); // 与文件键名一致
+void from_json(const MyJson& j, Event& v) {
+    j.at("Event_Name").get_to(v.event_name);
     j.at("id").get_to(v.id);
 }
 
 // ========== Link 序列化 ==========
-void to_json(json& j, const Link& v) {
-    j = json{
-        {"sourceNode", v.sourceNode},
-        {"sourcePin", v.sourcePin},
-        {"targetNode", v.targetNode},
-        {"targetPin", v.targetPin}
-    };
+void to_json(MyJson& j, const Link& v) {
+    j = MyJson();
+    j["sourceNode"] = v.sourceNode;
+    j["sourcePin"] = v.sourcePin;
+    j["targetNode"] = v.targetNode;
+    j["targetPin"] = v.targetPin;
 }
 
-void from_json(const json& j, Link& v) {
+void from_json(const MyJson& j, Link& v) {
     j.at("sourceNode").get_to(v.sourceNode);
     j.at("sourcePin").get_to(v.sourcePin);
     j.at("targetNode").get_to(v.targetNode);
@@ -108,20 +110,38 @@ void from_json(const json& j, Link& v) {
 }
 
 // ========== BlueprintData 序列化 ==========
-void to_json(json& j, const BlueprintData& v) {
-    j = json{
-        {"Name", v.name},                // 大写，保持与现有文件一致
-        {"id", v.id},
-        {"Nodes", v.nodes},
-        {"Variables", v.variables},
-        {"InParameters", v.inParameters},
-        {"OutParameters", v.outParameters},
-        {"Events", v.events},
-        {"Links", v.links}
-    };
+void to_json(MyJson& j, const BlueprintData& v) {
+    j = MyJson();
+    j["Name"] = v.name;
+    j["id"] = v.id;
+
+    // 处理各个自定义容器类型，通过 to_json 转换
+    MyJson nodesJson;
+    to_json(nodesJson, v.nodes);
+    j["Nodes"] = std::move(nodesJson);
+
+    MyJson varsJson;
+    to_json(varsJson, v.variables);
+    j["Variables"] = std::move(varsJson);
+
+    MyJson inParamsJson;
+    to_json(inParamsJson, v.inParameters);
+    j["InParameters"] = std::move(inParamsJson);
+
+    MyJson outParamsJson;
+    to_json(outParamsJson, v.outParameters);
+    j["OutParameters"] = std::move(outParamsJson);
+
+    MyJson eventsJson;
+    to_json(eventsJson, v.events);
+    j["Events"] = std::move(eventsJson);
+
+    MyJson linksJson;
+    to_json(linksJson, v.links);
+    j["Links"] = std::move(linksJson);
 }
 
-void from_json(const json& j, BlueprintData& v) {
+void from_json(const MyJson& j, BlueprintData& v) {
     j.at("Name").get_to(v.name);
     j.at("id").get_to(v.id);
     j.at("Nodes").get_to(v.nodes);
@@ -135,10 +155,11 @@ void from_json(const json& j, BlueprintData& v) {
 // ========== 文件读写 ==========
 bool WriteBPData(const std::string& filepath, const BlueprintData& data) {
     try {
-        json j = data;               // 自动调用 to_json
+        MyJson j;
+        to_json(j, data);          // 显式调用 to_json，避免隐式转换
         std::ofstream file(filepath, std::ios::binary);
         if (!file.is_open()) return false;
-        file << j.dump(4);           // 美观输出
+        file << j.dump(4);
         return true;
     }
     catch (...) {
@@ -154,7 +175,7 @@ BlueprintData ReadBPData(const std::string& filepath) {
     if (!file.is_open()) {
         throw std::runtime_error("Cannot open file: " + filepath);
     }
-    json j;
+    MyJson j;
     file >> j;
     return j.get<BlueprintData>();   // 自动调用 from_json
 }

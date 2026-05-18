@@ -35,5 +35,8 @@
     <ClInclude Include="SharedTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MyJson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

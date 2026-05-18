@@ -14,10 +14,8 @@
 #include "SharedTypes.h"
 #include "Json_BPData_ReadWrite.h"
 #include "Json_LevelData_ReadWrite.h"
-#include "nlohmann/json.hpp"
 
 namespace fs = std::filesystem;
-using json = nlohmann::json;
 
 // 事件名称
 const std::wstring EVENT_ADD_END = L"Global\\OFGal_Engine_AddItem_AddEnd";
@@ -84,21 +82,6 @@ std::string WideToUtf8(const std::wstring& wstr) {
 }
 
 // ------------------------------------------------------------
-// 内部 JSON 写入函数（直接使用宽字符路径，避免 ANSI 限制）
-// ------------------------------------------------------------
-bool WriteJsonToFile(const std::wstring& filepath, const json& j) {
-    try {
-        std::ofstream file(fs::path(filepath), std::ios::out | std::ios::binary);
-        if (!file.is_open()) return false;
-        file << j.dump(4);   // 美化输出
-        return true;
-    }
-    catch (...) {
-        return false;
-    }
-}
-
-// ------------------------------------------------------------
 // 创建空蓝图文件（.bp）
 // ------------------------------------------------------------
 bool CreateEmptyBlueprint(const std::wstring& filepath) {
@@ -107,8 +90,7 @@ bool CreateEmptyBlueprint(const std::wstring& filepath) {
         bp.name = fs::path(filepath).stem().string();  // 文件名（UTF-8）
         bp.id = 1;
 
-        json j = bp;  // 利用已定义的 to_json
-        return WriteJsonToFile(filepath, j);
+        return WriteBPData(WideToUtf8(filepath), bp);
     }
     catch (const std::exception& e) {
         std::cerr << "[Blueprint] Exception: " << e.what() << std::endl;
@@ -123,9 +105,15 @@ bool CreateEmptyLevel(const std::wstring& filepath) {
     try {
         LevelData level;
         level.name = fs::path(filepath).stem().string();
-
+        /*
         json j = level;  // 利用已定义的 to_json
         return WriteJsonToFile(filepath, j);
+        */
+        level.objects["background"]->name = "background";
+        level.objects["background"]->parent = nullptr;
+        level.objects["background"]->Transform = TransformComponent();
+
+        return WriteLevelData(WideToUtf8(filepath), level);
     }
     catch (const std::exception& e) {
         std::cerr << "[Level] Exception: " << e.what() << std::endl;

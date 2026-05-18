@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="Json_BPData_ReadWrite.h" />
     <ClInclude Include="Json_LevelData_ReadWrite.h" />
+    <ClInclude Include="MyJson.h" />
     <ClInclude Include="SharedTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
