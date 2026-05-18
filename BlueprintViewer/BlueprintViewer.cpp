@@ -1231,6 +1231,111 @@ bool BlueprintViewer::Edit() {
         }
     }
 
+    // ------------------ SetTransform 高级属性 ------------------
+    if (newNodeType == "SetTransform") {
+        while (true) {
+            ClearScreen();
+            std::cout << "Configure advanced settings for SetTransform?\n\n";
+            std::cout << "Skip? (Y/N) Enter #esc# to cancel.\n> ";
+            std::string ans = readLine();
+            if (isEsc(ans)) return false;
+            auto toLower = [](std::string s) {
+                for (auto& c : s) c = (char)tolower((unsigned char)c);
+                return s;
+                };
+            ans = toLower(ans);
+            if (ans == "n" || ans == "no") {
+                struct PropEntry {
+                    std::string key;
+                    std::string desc;
+                    std::vector<std::string> validValues;
+                };
+                // 可配置的属性列表，这里只放入目标对象名（可按需扩展）
+                std::vector<PropEntry> transformProps = {
+                    {"target", "Name of the object to apply the transform to", {}}
+                };
+                std::set<int> chosenProps;
+                while (true) {
+                    ClearScreen();
+                    std::cout << "Available advanced settings for SetTransform:\n";
+                    for (size_t i = 0; i < transformProps.size(); ++i)
+                        std::cout << " " << i + 1 << ". " << transformProps[i].key << " - " << transformProps[i].desc << "\n";
+                    std::cout << "\nEnter comma-separated numbers (e.g. 1) or 'all' to add all, or press Enter to skip: > ";
+                    std::string sel = readLine();
+                    if (isEsc(sel)) return false;
+                    if (sel.empty()) break;
+                    sel = toLower(sel);
+                    if (sel == "all") {
+                        for (int i = 0; i < (int)transformProps.size(); ++i) chosenProps.insert(i);
+                        break;
+                    }
+                    std::istringstream iss(sel);
+                    std::string token;
+                    bool valid = true;
+                    while (std::getline(iss, token, ',')) {
+                        try {
+                            int num = std::stoi(token) - 1;
+                            if (num >= 0 && num < (int)transformProps.size())
+                                chosenProps.insert(num);
+                            else { valid = false; break; }
+                        }
+                        catch (...) { valid = false; break; }
+                    }
+                    if (valid && !chosenProps.empty()) break;
+                    std::cout << "Invalid selection. Try again.\n";
+                    std::cin.get();
+                }
+                // 逐个设置选中的属性
+                for (int idx : chosenProps) {
+                    const PropEntry& entry = transformProps[idx];
+                    while (true) {
+                        ClearScreen();
+                        std::cout << "Setting: " << entry.key << "\n";
+                        std::cout << entry.desc << "\n";
+                        if (!entry.validValues.empty()) {
+                            std::cout << "Valid values: ";
+                            for (size_t i = 0; i < entry.validValues.size(); ++i) {
+                                if (i) std::cout << ", ";
+                                std::cout << entry.validValues[i];
+                            }
+                            std::cout << "\n";
+                        }
+                        std::cout << "Enter value (or press Enter to skip this setting): > ";
+                        std::string val = readLine();
+                        if (isEsc(val)) return false;
+                        if (val.empty()) {
+                            // 目标对象名不允许为空，要求重新输入
+                            if (entry.key == "target") {
+                                std::cout << "Object name cannot be empty.\n";
+                                std::cin.get();
+                                continue;
+                            }
+                            break;  // 其他可选项允许跳过
+                        }
+                        // 如果定义了合法值列表，则检查输入是否匹配
+                        if (!entry.validValues.empty()) {
+                            bool match = false;
+                            for (const auto& v : entry.validValues) {
+                                if (val == v) { match = true; break; }
+                            }
+                            if (!match) {
+                                std::cout << "Invalid value. Must be one of the listed options.\n";
+                                std::cin.get();
+                                continue;
+                            }
+                        }
+                        newNode.properties[entry.key] = val;
+                        break;
+                    }
+                }
+                break;
+            }
+            else if (ans == "y" || ans == "yes") {
+                break;
+            }
+        }
+    }
+
     // --------------------- Render 高级属性 ---------------------
     if (newNodeType == "Render") {
         while (true) {

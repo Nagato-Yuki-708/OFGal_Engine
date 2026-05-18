@@ -664,6 +664,7 @@ void WindowsSystem::Run() {
                     OutputDebugStringW(L"[OFGal_Engine] Start Running GameVM...\n");
                     BlueprintScheduler vm;
                     vm.Start(this->m_currentLevel);
+                    system("cls");
                 }
             }
             else {

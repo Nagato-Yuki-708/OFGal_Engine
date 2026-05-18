@@ -166,6 +166,7 @@
     <ClInclude Include="cmdDrawer.h" />
     <ClInclude Include="CompiledBlueprint.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="EnvironmentalAssessment.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FrameProcessing.cuh" />
     <ClInclude Include="GameVM.h" />

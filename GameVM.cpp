@@ -119,14 +119,175 @@ Value Node_Div::compute(const Value& a, const Value& b) {
 }
 
 void SetTransforNode::func_for_VM(ExecutionContext& ctx) {
-	if (!obj->Transform.has_value()) return;
+    ObjectData* obj = GetObjByName(targetName);
+	if ((obj == nullptr) || (!obj->Transform.has_value())) return;
 	auto& tf = obj->Transform.value();
-	if (in_loc_x) tf.Location.x = in_loc_x->f;
-	if (in_loc_y) tf.Location.y = in_loc_y->f;
-	if (in_loc_z) tf.Location.z = in_loc_z->i;
+	tf.Location.x = in_loc_x == nullptr ? GetValueByAnalyzeLiteral(literals[0]).f : in_loc_x->f;
+	tf.Location.y = in_loc_y == nullptr ? GetValueByAnalyzeLiteral(literals[1]).f : in_loc_y->f;
+	tf.Location.z = in_loc_z == nullptr ? GetValueByAnalyzeLiteral(literals[2]).i : in_loc_z->i;
 
-	if (in_rotation) tf.Rotation.r = in_rotation->f;
+	tf.Rotation.r = in_rotation == nullptr ? GetValueByAnalyzeLiteral(literals[3]).f : in_rotation->f;
 
-	if (in_scale_x) tf.Scale.x = in_scale_x->f;
-	if (in_scale_y) tf.Scale.y = in_scale_y->f;
+	tf.Scale.x = in_scale_x == nullptr ? GetValueByAnalyzeLiteral(literals[4]).f : in_scale_x->f;
+	tf.Scale.y = in_scale_y == nullptr ? GetValueByAnalyzeLiteral(literals[5]).f : in_scale_y->f;
+}
+ObjectData* SetTransforNode::GetObjByName(const std::string& name) {
+	if (!level) return nullptr;
+	if (name == "") return nullptr;
+
+	// 使用递归辅助 lambda
+	std::function<ObjectData* (ObjectData*)> findRecursive =
+		[&](ObjectData* obj) -> ObjectData* {
+		if (!obj) return nullptr;
+		if (obj->name == name) return obj;
+		for (auto& [childName, child] : obj->objects) {
+			ObjectData* found = findRecursive(child);
+			if (found) return found;
+		}
+		return nullptr;
+		};
+
+	// 遍历场景根对象
+	for (auto& [objName, obj] : level->objects) {
+		ObjectData* found = findRecursive(obj);
+		if (found) return found;
+	}
+	return nullptr;
+}
+
+Value BinaryOpNode::GetValueByAnalyzeLiteral(const std::string& literal)
+{
+	if (literal.empty())
+		return Value();                     // 空字面量 → NONE
+
+	// 1. bool
+	if (literal == "true")  return Value::makeBool(true);
+	if (literal == "false") return Value::makeBool(false);
+
+	// 2. int
+	auto allDigits = [](const std::string& s, size_t start, size_t end) {
+		for (size_t i = start; i < end; ++i)
+			if (!std::isdigit(static_cast<unsigned char>(s[i])))
+				return false;
+		return true;
+		};
+
+	size_t idx = 0;
+	if (literal[idx] == '+' || literal[idx] == '-') {
+		++idx;
+		if (idx == literal.size())          // 只有一个符号，不是数字
+			return Value::makeString(literal);
+	}
+	if (allDigits(literal, idx, literal.size())) {
+		// 禁止前导零，除非数字部分就是 "0"
+		if (literal[idx] != '0' || (literal.size() - idx) == 1)
+			return Value::makeInt(std::stoi(literal));
+	}
+
+	// 3. float（必须包含小数点，且至少有一位数字，末尾可选 f）
+	if (literal.find('.') != std::string::npos) {
+		size_t pos = 0;
+		if (literal[pos] == '+' || literal[pos] == '-')
+			++pos;
+
+		bool hasDigit = false;
+		bool dotSeen = false;
+		bool valid = true;
+
+		for (; pos < literal.size(); ++pos) {
+			char c = literal[pos];
+			if (std::isdigit(static_cast<unsigned char>(c))) {
+				hasDigit = true;
+			}
+			else if (c == '.') {
+				if (dotSeen) { valid = false; break; }
+				dotSeen = true;
+			}
+			else if (c == 'f') {                   // 小写 f
+				if (pos != literal.size() - 1) {     // f 只能在末尾
+					valid = false;
+					break;
+				}
+				// 有 f 时前面也必须已经出现过小数点（dotSeen 保证）
+			}
+			else {
+				valid = false;
+				break;
+			}
+		}
+
+		if (valid && hasDigit && dotSeen)
+			return Value::makeFloat(std::stof(literal));
+	}
+
+	// 4. 以上都不满足 → 字符串
+	return Value::makeString(literal);
+}
+Value SetTransforNode::GetValueByAnalyzeLiteral(const std::string& literal)
+{
+	if (literal.empty())
+		return Value();                     // 空字面量 → NONE
+
+	// 1. bool
+	if (literal == "true")  return Value::makeBool(true);
+	if (literal == "false") return Value::makeBool(false);
+
+	// 2. int
+	auto allDigits = [](const std::string& s, size_t start, size_t end) {
+		for (size_t i = start; i < end; ++i)
+			if (!std::isdigit(static_cast<unsigned char>(s[i])))
+				return false;
+		return true;
+		};
+
+	size_t idx = 0;
+	if (literal[idx] == '+' || literal[idx] == '-') {
+		++idx;
+		if (idx == literal.size())          // 只有一个符号，不是数字
+			return Value::makeString(literal);
+	}
+	if (allDigits(literal, idx, literal.size())) {
+		// 禁止前导零，除非数字部分就是 "0"
+		if (literal[idx] != '0' || (literal.size() - idx) == 1)
+			return Value::makeInt(std::stoi(literal));
+	}
+
+	// 3. float（必须包含小数点，且至少有一位数字，末尾可选 f）
+	if (literal.find('.') != std::string::npos) {
+		size_t pos = 0;
+		if (literal[pos] == '+' || literal[pos] == '-')
+			++pos;
+
+		bool hasDigit = false;
+		bool dotSeen = false;
+		bool valid = true;
+
+		for (; pos < literal.size(); ++pos) {
+			char c = literal[pos];
+			if (std::isdigit(static_cast<unsigned char>(c))) {
+				hasDigit = true;
+			}
+			else if (c == '.') {
+				if (dotSeen) { valid = false; break; }
+				dotSeen = true;
+			}
+			else if (c == 'f') {                   // 小写 f
+				if (pos != literal.size() - 1) {     // f 只能在末尾
+					valid = false;
+					break;
+				}
+				// 有 f 时前面也必须已经出现过小数点（dotSeen 保证）
+			}
+			else {
+				valid = false;
+				break;
+			}
+		}
+
+		if (valid && hasDigit && dotSeen)
+			return Value::makeFloat(std::stof(literal));
+	}
+
+	// 4. 以上都不满足 → 字符串
+	return Value::makeString(literal);
 }

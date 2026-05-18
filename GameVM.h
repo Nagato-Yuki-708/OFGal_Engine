@@ -9,6 +9,7 @@
 #include "InputSystem.h"
 #include <chrono>
 #include <unordered_map>
+#include <stdexcept>
 
 // ============================================================
 // 前向声明
@@ -56,14 +57,17 @@ public:
 class BinaryOpNode :public NODE {  // 蓝图节点类型：ADD / Sub / Mul / Div 的公共基类
 public:
 	std::vector<Value*>InData;
+	std::array<std::string, 2> literals = { "","" };
 	std::vector<Value> OutData;
 	virtual Value compute(const Value& a, const Value& b) = 0;
 	void func_for_VM(ExecutionContext& ctx) override {
-		Value a = InData[0] ? *InData[0] : Value();
-		Value b = InData[1] ? *InData[1] : Value();
+		Value a = InData[0] ? *InData[0] : GetValueByAnalyzeLiteral(literals[0]);
+		Value b = InData[1] ? *InData[1] : GetValueByAnalyzeLiteral(literals[1]);
 		Value result = compute(a, b);
 			OutData[0] = result;
 	}
+private:
+	Value GetValueByAnalyzeLiteral(const std::string& literal);
 };
 class Node_Equal : public BinaryOpNode {    //这个是等号的比较节点
 public:
@@ -116,10 +120,7 @@ public:
 	int intervalMs = 0;       //这两值分别代表
 	double lastTriggerTime = 0.0;
 	void func_for_VM(ExecutionContext& ctx) {
-	//入口节点本身不执行逻辑
 	}
-
-	//分工要明确！
 };
 
 class PlayWhenKeyNode : public NODE {
@@ -127,7 +128,6 @@ public:
 	KeyCode targetKey = KeyCode::Unknown;
 	void func_for_VM(ExecutionContext& ctx) override {
 
-		// 入口节点本身不执行逻辑
 	}
 };
 
@@ -159,6 +159,9 @@ public:
 	Value* in_rotation = nullptr;
 	Value* in_scale_x = nullptr;
 	Value* in_scale_y = nullptr;
+
+	std::string targetName = "";
+	std::array<std::string, 6> literals = { "0.0f","0.0f","0","0.0f","0.0f","0.0f" };
 	// ★ 编译注意：不要在此类中声明 NODE* nextNode，会遮蔽基类成员！已删除
 	void func_for_VM(ExecutionContext& ctx);  // 定义在 GameVM.cpp
 	// ★ 编译注意：
@@ -166,6 +169,8 @@ public:
 	//      "Location.x"→in_loc_x, "Location.y"→in_loc_y, "Location.z"→in_loc_z 等
 	//   2. InitNodeData 中无需额外操作（指针已默认 nullptr，由 BuildDataLinks 绑定）
 	//   3. obj 指针需要由编译器在链接阶段设置（当前代码中未实现，需要补充）
+	ObjectData* GetObjByName(const std::string& name);
+	Value GetValueByAnalyzeLiteral(const std::string& literal);
 };
 
 // ============================================================

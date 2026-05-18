@@ -1,10 +1,13 @@
-﻿#include <iostream>
+﻿// Copyright 2026 Nagato-Yuki-708. All Rights Reserved.
+#include <iostream>
+#include "EnvironmentalAssessment.h"
 #include "_EventBus.h"
 #include "BMP_Reader.h"
 #include "cmdDrawer.h"
 #include "InputSystem.h"
 #include<windows.h>
 #include <atomic>
+#include <cstdlib>
 #include <thread>
 #include"InputCollector.h"
 #include "FileSystem.h"
@@ -59,7 +62,7 @@ void printWelcomeMessage(int version, const std::vector<std::string>& members) {
     std::cout << BORDER << std::endl;
 }
 std::string GetProjectPath() {
-    printWelcomeMessage(10001, members);
+    printWelcomeMessage(10002, members);
 	std::string ProjectPath = "";
 	std::cout << "Please enter the project path: (Input of the following paths is prohibited: C:\\Users\\UserName...)\n" << std::endl;
 	std::cin >> ProjectPath;
@@ -70,15 +73,29 @@ std::string GetProjectPath() {
 int main() {
 	std::string ProjectPath = GetProjectPath();
 
+    if (!IsValidDirectory(ProjectPath)) {
+        std::cout << "\n Error: Invalid path" << std::endl;
+        system("pause");
+        return -1;
+    }
+    if (IsRunningInWindowsTerminal()) {
+        std::cout << "\n Error: Running this program using Windows Terminal is not allowed\n   Please right - click the main program and run as administrator" << std::endl;
+        system("pause");
+        return -1;
+    }
+    if (!HasDiscreteNvidiaGPU()) {
+        std::cout << "\n Error: No available dedicated NVIDIA graphics card detected" << std::endl;
+        system("pause");
+        return -1;
+    }
+
 	_EventBus* pEventBus = &_EventBus::getInstance();
 	FileSystem* pFileSystem = &FileSystem::getInstance();
 	SoundSystem* pSoundSystem = &SoundSystem::getInstance();
 	RenderingSystem* pRenderingSystem = &RenderingSystem::getInstance();
     WindowsSystem* pWindowsSystem = &WindowsSystem::getInstance(ProjectPath);		//仅本次设置路径有效
 
-    pWindowsSystem->Run();      //实际运行
-
- //content
+    pWindowsSystem->Run();
 
 	return 0;
 }

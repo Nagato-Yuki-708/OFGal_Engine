@@ -123,12 +123,43 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 		if (auto* bin = dynamic_cast<BinaryOpNode*>(node)) {  //如果是运算节点，那么就给他们的输入输出数据分配空间
 			bin->InData.resize(2);
 			bin->OutData.resize(1);
-			for (int i = 0; i < 2; i++) {
+			for (int i = 0; i < 2; ++i) {
 				bin->InData[i] = nullptr;
+				for (auto& pin : n.pins) {
+					if (pin.name == "A")
+						bin->literals[i] = pin.literal.has_value() ? pin.literal.value() : "";
+                    if (pin.name == "B")
+						bin->literals[i] = pin.literal.has_value() ? pin.literal.value() : "";
+				}
 			}
 		}
 		if (auto* st = dynamic_cast<SetTransforNode*>(node)) {
-
+			auto it = n.properties.find("target");
+			if (it != n.properties.end())
+				st->targetName = it->second;
+			else
+				st->targetName = "";
+            for (auto& pin : n.pins) { 
+				if (pin.name == "Location_x") {
+					st->literals[0] = pin.literal.has_value() ? pin.literal.value() : "0.0f";
+				}
+                if (pin.name == "Location_y") {
+					st->literals[1] = pin.literal.has_value() ? pin.literal.value() : "0.0f";
+				}
+                if (pin.name == "Location_z") {
+					st->literals[2] = pin.literal.has_value() ? pin.literal.value() : "0";
+				}
+                if (pin.name == "Rotation") {
+					st->literals[3] = pin.literal.has_value() ? pin.literal.value() : "0.0f";
+				}
+                if (pin.name == "Scale_x") {
+					st->literals[4] = pin.literal.has_value() ? pin.literal.value() : "0.0f";
+				}
+                if (pin.name == "Scale_y") {
+					st->literals[5] = pin.literal.has_value() ? pin.literal.value() : "0.0f";
+				}
+			}
+			
 		}
 
 		if (auto* timer = dynamic_cast<PlayPerNMsNode*>(node)) {

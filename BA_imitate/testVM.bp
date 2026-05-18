@@ -27,12 +27,6 @@
             "targetPin": "Frame"
         },
         {
-            "sourceNode": 3,
-            "sourcePin": "OEXEC",
-            "targetNode": 4,
-            "targetPin": "IEXEC"
-        },
-        {
             "sourceNode": 4,
             "sourcePin": "OEXEC",
             "targetNode": 5,
@@ -55,6 +49,18 @@
             "sourcePin": "Frame",
             "targetNode": 6,
             "targetPin": "Frame"
+        },
+        {
+            "sourceNode": 3,
+            "sourcePin": "OEXEC",
+            "targetNode": 7,
+            "targetPin": "IEXEC"
+        },
+        {
+            "sourceNode": 7,
+            "sourcePin": "OEXEC",
+            "targetNode": 4,
+            "targetPin": "IEXEC"
         }
     ],
     "Name": "testVM",
@@ -214,6 +220,61 @@
             ],
             "properties": {},
             "type": "ShowtheFrame"
+        },
+        {
+            "id": 7,
+            "pins": [
+                {
+                    "io": "I",
+                    "name": "IEXEC",
+                    "type": "exec"
+                },
+                {
+                    "io": "I",
+                    "literal": "0",
+                    "name": "Location_x",
+                    "type": "float"
+                },
+                {
+                    "io": "I",
+                    "literal": "0",
+                    "name": "Location_y",
+                    "type": "float"
+                },
+                {
+                    "io": "I",
+                    "literal": "200",
+                    "name": "Location_z",
+                    "type": "int"
+                },
+                {
+                    "io": "I",
+                    "literal": "0",
+                    "name": "Rotation",
+                    "type": "float"
+                },
+                {
+                    "io": "I",
+                    "literal": "0.5",
+                    "name": "Scale_x",
+                    "type": "float"
+                },
+                {
+                    "io": "I",
+                    "literal": "0.5",
+                    "name": "Scale_y",
+                    "type": "float"
+                },
+                {
+                    "io": "O",
+                    "name": "OEXEC",
+                    "type": "exec"
+                }
+            ],
+            "properties": {
+                "target": "AjitaniHifumi"
+            },
+            "type": "SetTransform"
         }
     ],
     "OutParameters": [],
