@@ -4,6 +4,7 @@
 #include<iostream>
 #include "SharedTypes.h"
 #include "_EventBus.h"
+#include "SoundSystem.h"
 #include "SoundEvents.h"
 #include"InputCollector.h"
 #include "InputSystem.h"
@@ -330,10 +331,8 @@ public:
 		if (vol > 1.0f) vol = 1.0f;
 
 		if (!soundPath.empty()) {
-			// 通过 _EventBus 发布 PlaySoundEvent，SoundSystem 在构造时已订阅此事件
-			// 回调内执行 SoundSystem::playSound(playEvent.path, playEvent.loop)
-			// SoundSystem::playSound 使用 Windows MCI API 打开设备并播放
-			_EventBus::getInstance().publish_PlaySound(PlaySoundEvent{soundPath, shouldLoop});   //路径有问题？
+			SoundSystem::getInstance().playSound(soundPath, shouldLoop);
+			SoundSystem::getInstance().SetSoundVolume(soundPath, vol);
 			DEBUG_LOG("Enter Play \n");
 			// TODO: 传递音量参数到 SoundSystem
 		}
