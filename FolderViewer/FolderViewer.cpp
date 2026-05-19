@@ -755,6 +755,7 @@ void FolderViewer::OnEnter() {
 
     const auto& item = m_displayItems[m_selectedIndex];
     if (item.isDirectory) {
+        return;     // 此处出现清屏错误，先暂时关闭功能
         // 进入文件夹
         m_currentFolderPath = item.fullPath;
         RefreshDisplay(m_currentFolderPath);

@@ -46,7 +46,7 @@ NODE* BlueprintCompiler::CreateNode(const Node& n) {  //这个函数负责创建
 	if (n.type == "FrameProcess")  return new FrameProcess_Node();
 	if (n.type == "ShowtheFrame")  return new ShowtheFrame_Node();
 	if (n.type == "PlaySound")     return new PlaySound_Node();
-	if (n.type == "PauseSound")    return new PauseSound_Node();
+	if (n.type == "StopSound")    return new PauseSound_Node();
 	if (n.type == "GetVariable")       return new GET_VAR();
 	if (n.type == "SetVariable")       return new SET_VAR();
 
