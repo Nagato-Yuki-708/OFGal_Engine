@@ -62,7 +62,7 @@ void printWelcomeMessage(int version, const std::vector<std::string>& members) {
     std::cout << BORDER << std::endl;
 }
 std::string GetProjectPath() {
-    printWelcomeMessage(10008, members);
+    printWelcomeMessage(10009, members);
 	std::string ProjectPath = "";
 	std::cout << "Please enter the project path: (Input of the following paths is prohibited: C:\\Users\\UserName...)\n" << std::endl;
 	std::cin >> ProjectPath;

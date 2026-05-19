@@ -665,6 +665,7 @@ void WindowsSystem::Run() {
                     BlueprintScheduler vm;
                     vm.Start(this->m_currentLevel);
                     SoundSystem::getInstance().stopAllSounds();
+                    ClearTextBlocks();
                     system("cls");
                     if (m_currentLevel)
                         delete m_currentLevel;
