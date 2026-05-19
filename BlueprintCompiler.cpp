@@ -383,12 +383,10 @@ void BlueprintCompiler::InitNodeData(const BlueprintData& data) {
 					*playSound->path = Value::makeString(pin.literal.value());
 				}
 				if (pin.name == "shouldLoop" && pin.literal.has_value()) {
-					playSound->loop = new Value();
-					*playSound->loop = Value::makeBool(pin.literal.value() == "true");
+					playSound->literals[0] = pin.literal.value();
 				}
 				if (pin.name == "Volume" && pin.literal.has_value()) {
-					playSound->volume = new Value();
-					*playSound->volume = Value::makeFloat(std::stof(pin.literal.value()));
+					playSound->literals[1] = pin.literal.value();
 				}
 			}
 		}

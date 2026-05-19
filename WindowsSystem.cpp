@@ -666,8 +666,8 @@ void WindowsSystem::Run() {
                     vm.Start(this->m_currentLevel);
                     SoundSystem::getInstance().stopAllSounds();
                     system("cls");
-                    //if (m_currentLevel)
-                        //delete m_currentLevel;
+                    if (m_currentLevel)
+                        delete m_currentLevel;
                     m_currentLevel = new LevelData(_EventBus::getInstance().publish_ReadLevelData(WideToUtf8(m_lastOpenedLevelPath)));
                 }
             }
@@ -686,8 +686,8 @@ void WindowsSystem::Run() {
             OutputDebugStringW((std::wstring(L"[OFGal_Engine] Opened file: ") + *targetPath + L"\n").c_str());
 
             if (result == WAIT_OBJECT_0) {
-                //if (m_currentLevel)
-                    //delete m_currentLevel;
+                if (m_currentLevel)
+                    delete m_currentLevel;
                 std::string pathStr = WideToUtf8(*targetPath);
                 m_lastOpenedLevelPath = *targetPath;
                 LevelData* loadedLevel = new LevelData(_EventBus::getInstance().publish_ReadLevelData(pathStr));

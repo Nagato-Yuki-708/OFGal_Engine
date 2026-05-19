@@ -315,11 +315,15 @@ public:
 	Value* loop = nullptr;
 	Value* volume = nullptr;  // ★ 新增：音量参数
 
+	std::array<std::string, 2> literals = { "false", "1.0f" };
+	bool getBOOLfromLiteral(std::string s);
+	float getFLOATfromLiteral(std::string s);
+
 	void func_for_VM(ExecutionContext& ctx) override {
 		DEBUG_LOG("Enter Sound \n");
 		std::string soundPath = (path && path->type == ValueType::STRING) ? path->s : "";
-		bool shouldLoop       = (loop && loop->type == ValueType::BOOL)   ? loop->b : false;
-		float vol             = (volume && volume->type == ValueType::FLOAT) ? volume->f : 1.0f;
+		bool shouldLoop       = (loop && loop->type == ValueType::BOOL)   ? loop->b : getBOOLfromLiteral(literals[0]);
+		float vol             = (volume && volume->type == ValueType::FLOAT) ? volume->f : getFLOATfromLiteral(literals[1]);
 
 		// 音量限制在 0.0 ~ 1.0 范围
 		if (vol < 0.0f) vol = 0.0f;

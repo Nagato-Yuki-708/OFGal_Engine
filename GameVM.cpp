@@ -291,3 +291,81 @@ Value SetTransforNode::GetValueByAnalyzeLiteral(const std::string& literal)
 	// 4. 以上都不满足 → 字符串
 	return Value::makeString(literal);
 }
+
+bool PlaySound_Node::getBOOLfromLiteral(std::string s) {
+	if (s == "TRUE" || s == "true")  return true;
+	// 其他情况（包括 "FALSE", "false", 空串, 任意其他字符串）均返回 false
+	return false;
+}
+
+float PlaySound_Node::getFLOATfromLiteral(std::string s) {
+	// 空字符串 -> 1.0f
+	if (s.empty()) return 1.0f;
+
+	// 1. 只能包含数字、小数点、正负号、f/F
+	for (char c : s) {
+		if (!(std::isdigit(c) || c == '.' || c == '+' || c == '-' || c == 'f' || c == 'F')) {
+			return 1.0f;
+		}
+	}
+
+	// 2. 处理可选的前导符号
+	size_t start = 0;
+	if (s[0] == '+' || s[0] == '-') {
+		start = 1;
+		if (s.size() == 1) return 1.0f; // 单独符号
+	}
+
+	// 3. 检查结尾的 f/F
+	bool hasF = false;
+	size_t end = s.size();
+	if (s.back() == 'f' || s.back() == 'F') {
+		hasF = true;
+		end = s.size() - 1;
+		if (end == start) return 1.0f; // 例如 "f"、"+f"
+	}
+
+	// 提取数字部分（去掉符号和 f）
+	std::string numPart = s.substr(start, end - start);
+	if (numPart.empty()) return 1.0f;
+
+	// 4. 检查小数点
+	int dotCount = 0;
+	size_t dotPos = std::string::npos;
+	for (size_t i = 0; i < numPart.size(); ++i) {
+		if (numPart[i] == '.') {
+			dotCount++;
+			dotPos = i;
+		}
+	}
+	if (dotCount > 1) return 1.0f;                     // 多个小数点
+	if (dotCount == 1 && dotPos == numPart.size() - 1) {
+		return 1.0f;                                   // 小数没有小数位（例如 "0."）
+	}
+
+	// 5. 找到第一个数字（用于判断前导零）
+	char firstDigit = 0;
+	for (char c : numPart) {
+		if (c >= '0' && c <= '9') {
+			firstDigit = c;
+			break;
+		}
+	}
+	if (firstDigit == 0) return 1.0f; // 没有数字（理论上不会执行，因为前面已确保非空）
+
+	// 6. 转换为浮点数
+	float value;
+	try {
+		value = std::stof(numPart);
+	}
+	catch (...) {
+		return 1.0f;   // 转换失败（如溢出）
+	}
+
+	// 7. 前导零规则：值不为0且第一位数字是'0'时返回 1.0f
+	if (value != 0.0f && firstDigit == '0') {
+		return 1.0f;
+	}
+
+	return value;
+}
