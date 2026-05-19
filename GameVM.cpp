@@ -299,37 +299,35 @@ bool PlaySound_Node::getBOOLfromLiteral(std::string s) {
 }
 
 float PlaySound_Node::getFLOATfromLiteral(std::string s) {
-	// 空字符串 -> 1.0f
 	if (s.empty()) return 1.0f;
 
-	// 1. 只能包含数字、小数点、正负号、f/F
+	// 1. 字符合法性检查
 	for (char c : s) {
-		if (!(std::isdigit(c) || c == '.' || c == '+' || c == '-' || c == 'f' || c == 'F')) {
+		if (!(std::isdigit(c) || c == '.' || c == '+' || c == '-' || c == 'f' || c == 'F'))
 			return 1.0f;
-		}
 	}
 
-	// 2. 处理可选的前导符号
+	// 2. 处理开头正负号
 	size_t start = 0;
 	if (s[0] == '+' || s[0] == '-') {
 		start = 1;
-		if (s.size() == 1) return 1.0f; // 单独符号
+		if (s.size() == 1) return 1.0f;  // 单独的 '+' 或 '-'
 	}
 
-	// 3. 检查结尾的 f/F
-	bool hasF = false;
+	// 3. 处理结尾的 f/F
 	size_t end = s.size();
+	bool hasF = false;
 	if (s.back() == 'f' || s.back() == 'F') {
 		hasF = true;
 		end = s.size() - 1;
-		if (end == start) return 1.0f; // 例如 "f"、"+f"
+		if (end == start) return 1.0f;   // 例如 "f"、"+f"
 	}
 
-	// 提取数字部分（去掉符号和 f）
+	// 提取纯数字部分（去掉符号与 f）
 	std::string numPart = s.substr(start, end - start);
 	if (numPart.empty()) return 1.0f;
 
-	// 4. 检查小数点
+	// 4. 小数点检查（只能有一个，且后面必须有数字）
 	int dotCount = 0;
 	size_t dotPos = std::string::npos;
 	for (size_t i = 0; i < numPart.size(); ++i) {
@@ -338,22 +336,12 @@ float PlaySound_Node::getFLOATfromLiteral(std::string s) {
 			dotPos = i;
 		}
 	}
-	if (dotCount > 1) return 1.0f;                     // 多个小数点
+	if (dotCount > 1) return 1.0f;
 	if (dotCount == 1 && dotPos == numPart.size() - 1) {
-		return 1.0f;                                   // 小数没有小数位（例如 "0."）
+		return 1.0f;   // 小数点后无数字，例如 "0."
 	}
 
-	// 5. 找到第一个数字（用于判断前导零）
-	char firstDigit = 0;
-	for (char c : numPart) {
-		if (c >= '0' && c <= '9') {
-			firstDigit = c;
-			break;
-		}
-	}
-	if (firstDigit == 0) return 1.0f; // 没有数字（理论上不会执行，因为前面已确保非空）
-
-	// 6. 转换为浮点数
+	// 5. 转换为浮点数
 	float value;
 	try {
 		value = std::stof(numPart);
@@ -362,8 +350,17 @@ float PlaySound_Node::getFLOATfromLiteral(std::string s) {
 		return 1.0f;   // 转换失败（如溢出）
 	}
 
-	// 7. 前导零规则：值不为0且第一位数字是'0'时返回 1.0f
-	if (value != 0.0f && firstDigit == '0') {
+	// 6. 前导零规则（仅限制无意义的前导零）
+	std::string intPart;   // 整数部分
+	if (dotCount == 1) {
+		intPart = numPart.substr(0, dotPos);   // 小数点前面的部分
+	}
+	else {
+		intPart = numPart;   // 没有小数点，整个就是整数部分
+	}
+
+	// 如果整数部分非空，且长度 > 1，且以 '0' 开头，且数值不为 0 → 非法
+	if (!intPart.empty() && intPart.size() > 1 && intPart[0] == '0' && value != 0.0f) {
 		return 1.0f;
 	}
 
